@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime
 from extensions import db
-from models import Ticket, User, Comment, Notification, Feedback
+from models import Ticket, User, Comment, Notification, Feedback, TicketStatus
 
 user_bp = Blueprint('user', __name__)
 
@@ -12,19 +12,35 @@ def user_dashboard():
     if current_user.role not in ['user']: # Simple RBAC check
          return redirect(url_for('main.index'))
          
-    status_filter = request.args.get('filter', 'active') # Default to active
+    # Chart Data
+    tickets = Ticket.query.filter_by(creator_id=current_user.id).all()
+    status_counts = {}
+    for t in tickets:
+        label = t.status_label
+        status_counts[label] = status_counts.get(label, 0) + 1
+        
+    return render_template('user/dashboard.html', 
+                         total_tickets=len(tickets),
+                         status_counts=status_counts)
+
+@user_bp.route('/my-tickets')
+@login_required
+def user_tickets():
+    if current_user.role != 'user':
+        return redirect(url_for('main.index'))
+        
+    status_filter = request.args.get('filter', 'active')
     
-    query = Ticket.query.filter_by(creator_id=current_user.id)
+    query = Ticket.query.join(TicketStatus).filter(Ticket.creator_id == current_user.id)
     
     if status_filter == 'active':
-        query = query.filter(Ticket.status.in_(['New', 'Assigned', 'In Progress', 'Waiting']))
+        query = query.filter(TicketStatus.name.in_(['New', 'Assigned', 'In Progress', 'Waiting']))
     elif status_filter == 'completed':
-        query = query.filter(Ticket.status.in_(['Resolved', 'Closed']))
-    # else 'all' -> no extra filter
+        query = query.filter(TicketStatus.name.in_(['Resolved', 'Closed', 'Rejected']))
     
     tickets = query.order_by(Ticket.updated_at.desc()).all()
     
-    return render_template('user/dashboard.html', tickets=tickets, current_filter=status_filter)
+    return render_template('user/tickets.html', tickets=tickets, current_filter=status_filter)
 
 @user_bp.route('/ticket/create', methods=['GET', 'POST'])
 @login_required
@@ -68,7 +84,8 @@ def view_ticket(ticket_id):
         flash('Bạn không có quyền truy cập')
         return redirect(url_for('main.index'))
         
-    return render_template('ticket_detail.html', ticket=ticket)
+    statuses = TicketStatus.query.all()
+    return render_template('ticket_detail.html', ticket=ticket, statuses=statuses)
 
 @user_bp.route('/ticket/<int:ticket_id>/comment', methods=['POST'])
 @login_required
@@ -114,6 +131,20 @@ def add_comment(ticket_id):
                 db.session.add(n)
                 
     db.session.commit()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({
+            'success': True,
+            'comment': {
+                'content': comment.content,
+                'author_name': current_user.full_name,
+                'author_initial': current_user.username[0].upper(),
+                'created_at': comment.created_at.strftime('%H:%M'),
+                'is_internal': comment.is_internal,
+                'user_id': current_user.id
+            }
+        })
+        
     return redirect(url_for('user.view_ticket', ticket_id=ticket.id))
 
 @user_bp.route('/ticket/<int:ticket_id>/feedback', methods=['GET', 'POST'])

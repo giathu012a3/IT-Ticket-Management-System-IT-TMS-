@@ -3,9 +3,24 @@
 {% block title %}Tổng quan Quản lý - TicketSys{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <h2 class="text-2xl font-bold dark:text-white tracking-tight">Tổng quan Hoạt động</h2>
-    <p class="text-slate-500 dark:text-slate-400 text-sm">Theo dõi hiệu suất đội ngũ và tình trạng hệ thống.</p>
+<div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-4">
+    <div>
+        <h2 class="text-2xl font-bold dark:text-white tracking-tight">Tổng quan Hoạt động</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Theo dõi hiệu suất đội ngũ và tình trạng hệ thống thông
+            qua biểu đồ.</p>
+    </div>
+
+    <!-- Time Range Filter -->
+    <div class="bg-white dark:bg-[#111418] border border-slate-200 dark:border-[#3b4754] rounded-lg p-1">
+        <select id="timeRangeFilter" onchange="updateDashboard(this.value)"
+            class="text-xs font-bold bg-transparent border-0 focus:ring-0 text-slate-700 dark:text-slate-300 py-1.5 pl-2 pr-8 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 rounded-md transition-colors">
+            <option value="7d" {% if current_range=='7d' %}selected{% endif %}>7 Ngày qua</option>
+            <option value="30d" {% if current_range=='30d' %}selected{% endif %}>30 Ngày qua</option>
+            <option value="3m" {% if current_range=='3m' %}selected{% endif %}>1 Quý qua</option>
+            <option value="1y" {% if current_range=='1y' %}selected{% endif %}>1 Năm qua</option>
+            <option value="all" {% if current_range=='all' %}selected{% endif %}>Tất cả thời gian</option>
+        </select>
+    </div>
 </div>
 
 <!-- Key Metrics -->
@@ -14,7 +29,7 @@
         class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
         <div>
             <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Tổng yêu cầu</p>
-            <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ total_tickets }}</h3>
+            <h3 id="stat-total" class="text-3xl font-bold text-slate-900 dark:text-white">{{ total_tickets }}</h3>
         </div>
         <div
             class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -26,7 +41,7 @@
         class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
         <div>
             <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Đã giải quyết</p>
-            <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ resolved_tickets }}</h3>
+            <h3 id="stat-resolved" class="text-3xl font-bold text-slate-900 dark:text-white">{{ resolved_tickets }}</h3>
         </div>
         <div
             class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
@@ -38,7 +53,7 @@
         class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
         <div>
             <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Tỷ lệ hoàn thành</p>
-            <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ completion_rate }}%</h3>
+            <h3 id="stat-rate" class="text-3xl font-bold text-slate-900 dark:text-white">{{ completion_rate }}%</h3>
         </div>
         <div
             class="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
@@ -47,76 +62,153 @@
     </div>
 </div>
 
-<!-- Staff Performance -->
-<div
-    class="bg-white dark:bg-[#111418] border border-slate-200 dark:border-[#3b4754] rounded-xl overflow-hidden shadow-sm">
-    <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-        <h3 class="font-bold dark:text-white flex items-center gap-2">
-            <span class="material-symbols-outlined text-primary">groups</span>
-            Hiệu suất Nhân viên
-        </h3>
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Ticket Status Chart -->
+    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
+        <h3 class="text-sm font-bold dark:text-white mb-6">Trạng thái Yêu cầu</h3>
+        <div class="w-full h-72 relative">
+            <canvas id="statusChart"></canvas>
+        </div>
     </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-left">
-            <thead
-                class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-[#9dabb9] text-xs font-bold uppercase tracking-wider">
-                <tr>
-                    <th class="px-6 py-4">Nhân viên</th>
-                    <th class="px-6 py-4 text-center">Đang xử lý</th>
-                    <th class="px-6 py-4 text-center">Đã giải quyết</th>
-                    <th class="px-6 py-4 text-center">Khối lượng công việc</th>
-                    <th class="px-6 py-4 text-right">Chi tiết</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                {% for staff in staff_members %}
-                {% set assigned_count = staff.tickets_assigned | length %}
-                {% set resolved_count = staff.tickets_assigned | selectattr("status", "in", ["Resolved", "Closed"]) |
-                list | length %}
-                {% set pending_count = assigned_count - resolved_count %}
 
-                <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-600 dark:text-slate-300">
-                                {{ staff.username[0]|upper if staff.username else '?' }}
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold dark:text-white">{{ staff.full_name }}</p>
-                                <p class="text-xs text-slate-500 uppercase tracking-wider">Staff</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <span
-                            class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-500">
-                            {{ pending_count }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <span
-                            class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-500">
-                            {{ resolved_count }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden flex">
-                            <!-- Simple visual of completion ratio -->
-                            {% set width = (resolved_count / assigned_count * 100)|int if assigned_count > 0 else 0 %}
-                            <div class="bg-emerald-500 h-2" style="width: {{ width }}%"></div>
-                        </div>
-                        <p class="text-[10px] text-slate-500 mt-1 text-center">{{ width }}% hoàn thành</p>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                        <!-- Link to filtered view for this staff could go here later -->
-                        <span
-                            class="text-slate-400 cursor-not-allowed material-symbols-outlined text-sm">more_horiz</span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Ticket Category Chart -->
+    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
+        <h3 class="text-sm font-bold dark:text-white mb-6">Yêu cầu theo Danh mục</h3>
+        <div class="w-full h-72 relative">
+            <canvas id="categoryChart"></canvas>
+        </div>
     </div>
 </div>
+
+<!-- Staff Performance Chart -->
+<div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm mb-8">
+    <h3 class="text-sm font-bold dark:text-white mb-6">Khối lượng công việc Nhân viên</h3>
+    <div class="w-full h-72 relative">
+        <canvas id="staffChart"></canvas>
+    </div>
+</div>
+
+<script id="status-data" type="text/plain">
+    {{ status_counts | tojson }}
+</script>
+<script id="category-data" type="text/plain">
+    {{ category_counts | tojson }}
+</script>
+<script id="staff-data" type="text/plain">
+    {{ staff_performance | tojson }}
+</script>
+
+<script>
+    // --- Data from Flask ---
+    const statusData = JSON.parse(document.getElementById('status-data').textContent);
+    const categoryData = JSON.parse(document.getElementById('category-data').textContent);
+    const staffData = JSON.parse(document.getElementById('staff-data').textContent);
+
+    // --- Chart Configs ---
+    Chart.defaults.color = '#64748b';
+    Chart.defaults.font.family = 'Inter';
+
+    let statusChart, categoryChart, staffChart;
+
+    function initCharts() {
+        // 1. Status Chart
+        if (statusChart) statusChart.destroy();
+        statusChart = new Chart(document.getElementById('statusChart'), {
+            type: 'pie',
+            data: {
+                labels: Object.keys(statusData),
+                datasets: [{
+                    data: Object.values(statusData),
+                    backgroundColor: ['#3b82f6', '#6366f1', '#f59e0b', '#a855f7', '#10b981', '#64748b']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { usePointStyle: true } }
+                }
+            }
+        });
+
+        // 2. Category Chart
+        if (categoryChart) categoryChart.destroy();
+        categoryChart = new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(categoryData),
+                datasets: [{
+                    data: Object.values(categoryData),
+                    backgroundColor: ['#ec4899', '#f43f5e', '#8b5cf6', '#06b6d4', '#14b8a6']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { usePointStyle: true } }
+                }
+            }
+        });
+
+        // 3. Staff Performance Chart
+        if (staffChart) staffChart.destroy();
+        staffChart = new Chart(document.getElementById('staffChart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(staffData),
+                datasets: [{
+                    label: 'Số lượng yêu cầu được giao',
+                    data: Object.values(staffData),
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 4,
+                    barThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
+                    x: { grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    initCharts();
+
+    async function updateDashboard(range) {
+        try {
+            const response = await fetch(`/leader/dashboard?time_range=${range}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (!response.ok) throw new Error('Network response was not ok');
+
+            const data = await response.json();
+
+            // Update Stats
+            document.getElementById('stat-total').textContent = data.total_tickets;
+            document.getElementById('stat-resolved').textContent = data.resolved_tickets;
+            document.getElementById('stat-rate').textContent = data.completion_rate + '%';
+
+            // Update Global Data Variables
+            statusData = data.status_counts;
+            categoryData = data.category_counts;
+            staffData = data.staff_performance;
+
+            // Re-render Charts
+            initCharts();
+
+        } catch (error) {
+            console.error('Error updating dashboard:', error);
+            alert('Có lỗi xảy ra khi cập nhật dữ liệu.');
+        }
+    }
+</script>
 {% endblock %}

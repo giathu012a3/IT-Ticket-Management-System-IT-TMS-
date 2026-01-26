@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
             darkMode: "class",
@@ -114,8 +115,14 @@
                 <a href="{{ url_for('admin.admin_dashboard') }}"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all {{ 'active-nav group' if request.endpoint == 'admin.admin_dashboard' else 'hover:bg-slate-100 dark:hover:bg-[#283039] text-slate-600 dark:text-slate-400 dark:hover:text-white' }}">
                     <span
-                        class="material-symbols-outlined {{ 'text-primary filled' if request.endpoint == 'admin.admin_dashboard' }}">admin_panel_settings</span>
-                    <span class="text-sm font-medium">Quản trị hệ thống</span>
+                        class="material-symbols-outlined {{ 'text-primary filled' if request.endpoint == 'admin.admin_dashboard' }}">insights</span>
+                    <span class="text-sm font-medium">Thống kê hệ thống</span>
+                </a>
+                <a href="{{ url_for('admin.admin_users') }}"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all {{ 'active-nav group' if request.endpoint == 'admin.admin_users' or request.endpoint == 'admin.create_user' else 'hover:bg-slate-100 dark:hover:bg-[#283039] text-slate-600 dark:text-slate-400 dark:hover:text-white' }}">
+                    <span
+                        class="material-symbols-outlined {{ 'text-primary filled' if request.endpoint == 'admin.admin_users' }}">manage_accounts</span>
+                    <span class="text-sm font-medium">Quản lý người dùng</span>
                 </a>
                 {% endif %}
             </nav>

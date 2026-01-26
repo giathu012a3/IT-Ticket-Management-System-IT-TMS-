@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from datetime import datetime
 from extensions import db
-from models import Ticket, Notification
+from models import Ticket, Notification, TicketStatus
 
 staff_bp = Blueprint('staff', __name__)
 
@@ -13,19 +13,27 @@ def staff_dashboard():
         return redirect(url_for('main.index'))
         
     # Only fetch active tickets for the main board, sorted by recent update
-    tickets = Ticket.query.filter(
+    tickets = Ticket.query.join(TicketStatus).filter(
         Ticket.assigned_to_id == current_user.id,
-        Ticket.status.in_(['Assigned', 'In Progress', 'Waiting'])
+        TicketStatus.name.in_(['Assigned', 'In Progress', 'Waiting'])
     ).order_by(Ticket.updated_at.desc()).all()
     
     # Staff personal stats
-    my_resolved = Ticket.query.filter_by(assigned_to_id=current_user.id, status='Resolved').count()
-    my_pending = Ticket.query.filter(Ticket.assigned_to_id==current_user.id, Ticket.status.in_(['Assigned', 'In Progress', 'Waiting'])).count()
+    my_tickets = Ticket.query.filter_by(assigned_to_id=current_user.id).all()
+    my_resolved = len([t for t in my_tickets if t.status == 'Resolved'])
+    my_pending = len([t for t in my_tickets if t.status in ['Assigned', 'In Progress', 'Waiting']])
     
+    # Chart Data
+    status_counts = {}
+    for t in my_tickets:
+        label = t.status_label
+        status_counts[label] = status_counts.get(label, 0) + 1
+        
     return render_template('staff/dashboard.html', 
                          tickets=tickets,
                          my_resolved=my_resolved,
-                         my_pending=my_pending)
+                         my_pending=my_pending,
+                         status_counts=status_counts)
 
 @staff_bp.route('/ticket/<int:ticket_id>/update_status', methods=['POST'])
 @login_required

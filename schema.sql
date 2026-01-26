@@ -17,6 +17,7 @@ CREATE TABLE ticket (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     creator_id INTEGER NOT NULL,
     assigned_to_id INTEGER,
+    rejection_reason TEXT,
     FOREIGN KEY (creator_id) REFERENCES user(id),
     FOREIGN KEY (assigned_to_id) REFERENCES user(id)
 );

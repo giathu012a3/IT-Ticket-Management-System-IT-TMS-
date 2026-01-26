@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Yêu cầu của tôi - TicketSys{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h2 class="text-2xl font-bold dark:text-white tracking-tight">Danh sách Yêu cầu</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Quản lý các yêu cầu hỗ trợ của bạn.</p>
+    </div>
+    <a href="{{ url_for('user.create_ticket') }}"
+        class="bg-primary hover:bg-primary/90 text-white px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
+        <span class="material-symbols-outlined text-lg">add_circle</span>
+        Tạo mới
+    </a>
+</div>
+
+<div
+    class="bg-white dark:bg-[#111418] border border-slate-200 dark:border-[#3b4754] rounded-xl overflow-hidden flex flex-col shadow-sm">
+    <div
+        class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-white/5">
+        <h3 class="text-sm font-bold dark:text-white flex items-center gap-2">
+            Tổng số
+            <span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full">{{ tickets|length }}</span>
+        </h3>
+
+        <!-- Filter Tabs -->
+        <div class="flex bg-slate-200 dark:bg-slate-700 p-1 rounded-lg">
+            <a href="{{ url_for('user.user_tickets', filter='active') }}"
+                class="px-3 py-1 text-xs font-bold rounded-md transition-all {{ 'bg-white dark:bg-[#111418] text-primary shadow-sm' if current_filter == 'active' else 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200' }}">
+                Đang xử lý
+            </a>
+            <a href="{{ url_for('user.user_tickets', filter='completed') }}"
+                class="px-3 py-1 text-xs font-bold rounded-md transition-all {{ 'bg-white dark:bg-[#111418] text-primary shadow-sm' if current_filter == 'completed' else 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200' }}">
+                Đã xong
+            </a>
+            <a href="{{ url_for('user.user_tickets', filter='all') }}"
+                class="px-3 py-1 text-xs font-bold rounded-md transition-all {{ 'bg-white dark:bg-[#111418] text-primary shadow-sm' if current_filter == 'all' else 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200' }}">
+                Tất cả
+            </a>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead>
+                <tr
+                    class="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-[#9dabb9] text-xs font-bold uppercase tracking-wider">
+                    <th class="px-6 py-4">Mã số</th>
+                    <th class="px-6 py-4">Tiêu đề</th>
+                    <th class="px-6 py-4">Danh mục</th>
+                    <th class="px-6 py-4">Trạng thái</th>
+                    <th class="px-6 py-4">Ngày tạo</th>
+                    <th class="px-6 py-4 text-right">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                {% for ticket in tickets %}
+                <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                    <td class="px-6 py-4 font-mono text-xs text-primary font-bold">#{{ ticket.id }}</td>
+                    <td class="px-6 py-4">
+                        <span class="block text-sm font-medium dark:text-white">{{ ticket.title }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span
+                            class="inline-flex items-center px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium">
+                            {{ ticket.category }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ ticket.status_color }}">
+                            {{ ticket.status_label }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-xs text-slate-500 dark:text-slate-400">
+                        {{ ticket.created_at.strftime('%d/%m/%Y') }}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}"
+                            class="text-slate-400 hover:text-primary transition-colors">
+                            <span class="material-symbols-outlined">visibility</span>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if not tickets %}
+        <div class="p-12 text-center">
+            <div
+                class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="material-symbols-outlined text-slate-400 text-3xl">confirmation_number</span>
+            </div>
+            <h3 class="text-sm font-bold dark:text-white mb-1">Chưa có yêu cầu nào</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Bạn chưa tạo yêu cầu hỗ trợ nào.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Yêu cầu #{{ ticket.id }} - TicketSys{% endblock %}
 
@@ -9,25 +9,9 @@
         <div>
             <div class="flex items-center gap-3 mb-2">
                 <span class="font-mono text-sm font-bold text-slate-400">#{{ ticket.id }}</span>
-                {% set status_colors = {
-                'New': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-500',
-                'Assigned': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-500',
-                'In Progress': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-500',
-                'Waiting': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-500',
-                'Resolved': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-500',
-                'Closed': 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400'
-                } %}
-                {% set status_labels = {
-                'New': 'Mới',
-                'Assigned': 'Đã giao',
-                'In Progress': 'Đang xử lý',
-                'Waiting': 'Chờ phản hồi',
-                'Resolved': 'Đã giải quyết',
-                'Closed': 'Đóng'
-                } %}
                 <span
-                    class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider {{ status_colors.get(ticket.status, 'bg-slate-100') }}">
-                    {{ status_labels.get(ticket.status, ticket.status) }}
+                    class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider {{ ticket.status_color }}">
+                    {{ ticket.status_label }}
                 </span>
             </div>
             <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ ticket.title }}</h1>
@@ -44,7 +28,7 @@
             {% endif %}
 
             {% if current_user.role in ['staff', 'leader'] %}
-            {% if ticket.status in ['Resolved', 'Closed'] %}
+            {% if ticket.status in ['Resolved', 'Closed', 'Rejected'] %}
             <!-- Disabled State -->
             <button disabled
                 class="bg-slate-100 dark:bg-white/5 text-slate-400 font-bold px-4 py-2 rounded-lg cursor-not-allowed flex items-center">
@@ -56,11 +40,12 @@
                 class="flex items-center gap-2">
                 <select name="status"
                     class="rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-[#283039] dark:text-white py-2 pl-3 pr-10 text-sm focus:ring-primary focus:border-primary shadow-sm">
-                    <option value="In Progress" {% if ticket.status=='In Progress' %}selected{% endif %}>Đang xử lý
-                    </option>
-                    <option value="Waiting" {% if ticket.status=='Waiting' %}selected{% endif %}>Chờ phản hồi</option>
-                    <option value="Resolved" {% if ticket.status=='Resolved' %}selected{% endif %}>Đã giải quyết
-                    </option>
+                    {% for status in statuses %}
+                    {% if status.name in ['In Progress', 'Waiting', 'Resolved'] %}
+                    <option value="{{ status.name }}" {% if ticket.status==status.name %}selected{% endif %}>{{
+                        status.label }}</option>
+                    {% endif %}
+                    {% endfor %}
                 </select>
                 <button type="submit"
                     class="bg-slate-900 dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 text-white font-bold px-4 py-2 rounded-lg transition-colors">
@@ -76,6 +61,24 @@
         <!-- Main Content: Description & Chat -->
         <div class="lg:col-span-2 space-y-8">
             <!-- Ticket Description -->
+            {% if ticket.status == 'Rejected' and ticket.rejection_reason %}
+            <div
+                class="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl p-6 relative overflow-hidden">
+                <div
+                    class="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-red-100 dark:bg-red-800/20 rounded-full blur-xl">
+                </div>
+                <div class="relative">
+                    <h3 class="flex items-center text-red-800 dark:text-red-400 font-bold mb-2">
+                        <span class="material-symbols-outlined mr-2">block</span>
+                        Yêu cầu đã bị từ chối
+                    </h3>
+                    <p class="text-red-700 dark:text-red-300 text-sm">
+                        <span class="font-semibold">Lý do:</span> {{ ticket.rejection_reason }}
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+
             <div
                 class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-slate-200 dark:border-[#3b4754] p-8">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Mô tả</h3>
@@ -103,7 +106,8 @@
                     Trao đổi
                 </h3>
 
-                <div class="space-y-6 mb-6">
+                <div id="chat-container"
+                    class="space-y-6 mb-6 h-[500px] overflow-y-auto custom-scrollbar pr-2 border border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-slate-50 dark:bg-slate-900/20">
                     {% for comment in ticket.comments %}
                     {% if comment.is_internal %}
                     {% if current_user.role != 'user' %}
@@ -145,8 +149,9 @@
                 </div>
 
                 <!-- Reply Box -->
-                {% if ticket.status not in ['Resolved', 'Closed'] %}
-                <form action="{{ url_for('user.add_comment', ticket_id=ticket.id) }}" method="POST"
+                {% if ticket.status not in ['Resolved', 'Closed', 'Rejected'] %}
+                <form id="comment-form" onsubmit="handleComment(event)"
+                    action="{{ url_for('user.add_comment', ticket_id=ticket.id) }}" method="POST"
                     class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-slate-200 dark:border-[#3b4754] p-4 relative focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
                     <textarea name="content" required rows="3"
                         class="w-full border-0 focus:ring-0 text-slate-700 dark:text-slate-200 text-sm resize-none bg-transparent placeholder-slate-400"
@@ -238,4 +243,94 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Scroll to bottom on load
+    const chatContainer = document.getElementById('chat-container');
+    if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    async function handleComment(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+
+        // Disable button to prevent double submit
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    appendComment(data.comment);
+                    form.reset();
+                    // Scroll to bottom
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                } else {
+                    alert('Có lỗi xảy ra: ' + (data.message || 'Unknown error'));
+                }
+            } else {
+                alert('Có lỗi kết nối máy chủ.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi gửi bình luận.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    function appendComment(comment) {
+        const currentUserId = Number('{{ current_user.id }}');
+        let html = '';
+
+        if (comment.is_internal) {
+            html = `
+            <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl p-4 ml-8 relative animate-fade-in-up">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-200 text-amber-800 text-[10px] font-bold px-1.5 rounded uppercase tracking-wider">Ghi chú nội bộ</span>
+                        <span class="text-xs font-bold text-slate-700 dark:text-amber-400">${comment.author_name}</span>
+                    </div>
+                    <span class="text-xs text-slate-400">${comment.created_at}</span>
+                </div>
+                <p class="text-slate-700 dark:text-amber-100 text-sm">${comment.content}</p>
+            </div>`;
+        } else {
+            const isMe = comment.user_id === currentUserId;
+            const flexClass = isMe ? 'flex-row-reverse' : '';
+            const bgClass = isMe ? 'bg-primary text-white border-primary' : 'bg-white dark:bg-[#111418] border-slate-200 dark:border-[#3b4754] dark:text-slate-200';
+            const alignClass = isMe ? 'text-right' : '';
+
+            html = `
+            <div class="group flex gap-4 ${flexClass} animate-fade-in-up">
+                <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                    ${comment.author_initial}
+                </div>
+                <div class="max-w-[85%]">
+                    <div class="rounded-2xl p-4 shadow-sm border ${bgClass}">
+                        <p class="text-sm leading-relaxed">${comment.content}</p>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1 ${alignClass}">
+                        ${comment.author_name} • ${comment.created_at}
+                    </p>
+                </div>
+            </div>`;
+        }
+
+        // Append HTML to container
+        // Using insertAdjacentHTML is safer/faster than innerHTML +=
+        chatContainer.insertAdjacentHTML('beforeend', html);
+    }
+</script>
 {% endblock %}

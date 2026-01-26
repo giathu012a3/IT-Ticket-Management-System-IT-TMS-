@@ -21,13 +21,10 @@
         <select name="status"
             class="py-2 pl-3 pr-8 rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111418] text-sm focus:ring-primary focus:border-primary dark:text-white">
             <option value="all">Tất cả trạng thái</option>
-            <option value="New" {% if request.args.get('status')=='New' %}selected{% endif %}>Mới</option>
-            <option value="Assigned" {% if request.args.get('status')=='Assigned' %}selected{% endif %}>Đã giao</option>
-            <option value="In Progress" {% if request.args.get('status')=='In Progress' %}selected{% endif %}>Đang xử lý
-            </option>
-            <option value="Resolved" {% if request.args.get('status')=='Resolved' %}selected{% endif %}>Đã giải quyết
-            </option>
-            <option value="Closed" {% if request.args.get('status')=='Closed' %}selected{% endif %}>Đóng</option>
+            {% for status in statuses %}
+            <option value="{{ status.name }}" {% if request.args.get('status')==status.name %}selected{% endif %}>{{
+                status.label }}</option>
+            {% endfor %}
         </select>
 
         <select name="priority"
@@ -76,25 +73,9 @@
                         <span class="text-xs text-slate-500">{{ ticket.category }}</span>
                     </td>
                     <td class="px-6 py-4">
-                        {% set status_colors = {
-                        'New': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-500',
-                        'Assigned': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-500',
-                        'In Progress': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-500',
-                        'Waiting': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-500',
-                        'Resolved': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-500',
-                        'Closed': 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400'
-                        } %}
-                        {% set status_labels = {
-                        'New': 'Mới',
-                        'Assigned': 'Đã giao',
-                        'In Progress': 'Đang xử lý',
-                        'Waiting': 'Chờ phản hồi',
-                        'Resolved': 'Đã giải quyết',
-                        'Closed': 'Đóng'
-                        } %}
                         <span
-                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold {{ status_colors.get(ticket.status, 'bg-slate-100') }}">
-                            {{ status_labels.get(ticket.status, ticket.status) }}
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold {{ ticket.status_color }}">
+                            {{ ticket.status_label }}
                         </span>
                     </td>
                     <td class="px-6 py-4">

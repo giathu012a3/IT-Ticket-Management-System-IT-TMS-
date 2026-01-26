@@ -2,6 +2,7 @@
 
 {% block title %}Phân công Yêu cầu - TicketSys{% endblock %}
 
+
 {% block content %}
 <div class="mb-6 flex items-center justify-between">
     <div>
@@ -28,12 +29,13 @@
                     <th class="px-6 py-4">Tiêu đề</th>
                     <th class="px-6 py-4">Độ ưu tiên</th>
                     <th class="px-6 py-4">Thời gian tạo</th>
-                    <th class="px-6 py-4">Phân công</th>
+                    <th class="px-6 py-4">Thao tác</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                 {% for ticket in new_tickets %}
-                <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                <tr id="ticket-row-{{ ticket.id }}"
+                    class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
                     <td class="px-6 py-4 font-mono text-xs text-primary font-bold">#{{ ticket.id }}</td>
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
@@ -68,8 +70,8 @@
                         {{ ticket.created_at.strftime('%H:%M %d/%m') }}
                     </td>
                     <td class="px-6 py-4">
-                        <form action="{{ url_for('leader.assign_ticket', ticket_id=ticket.id) }}" method="POST"
-                            class="flex gap-2">
+                    <td class="px-6 py-4">
+                        <form onsubmit="handleAssign(event, '{{ ticket.id }}')" class="flex gap-2">
                             <select name="staff_id" required
                                 class="text-xs py-1.5 pl-2 pr-8 rounded border-slate-200 bg-slate-50 dark:bg-[#283039] dark:border-slate-700 dark:text-white focus:ring-primary focus:border-primary">
                                 <option value="" disabled selected>Chọn nhân viên...</option>
@@ -80,6 +82,11 @@
                             <button type="submit"
                                 class="bg-primary hover:bg-primary/90 text-white rounded p-1.5 transition-colors shadow-sm">
                                 <span class="material-symbols-outlined text-sm">person_add</span>
+                            </button>
+                            <button type="button" onclick="openRejectModal('{{ ticket.id }}')"
+                                class="bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-400 rounded p-1.5 transition-colors shadow-sm"
+                                title="Từ chối">
+                                <span class="material-symbols-outlined text-sm">block</span>
                             </button>
                         </form>
                     </td>
@@ -102,4 +109,133 @@
         </table>
     </div>
 </div>
+
+<!-- Reject Modal -->
+<div id="rejectModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+    aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" aria-hidden="true"
+            onclick="closeRejectModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div
+            class="inline-block px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white dark:bg-[#1e2329] rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div class="sm:flex sm:items-start">
+                <div
+                    class="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-red-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
+                    <span class="material-symbols-outlined text-red-600">warning</span>
+                </div>
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white" id="modal-title">Từ chối yêu
+                        cầu</h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Bạn có chắc chắn muốn từ chối yêu cầu này?
+                            Vui lòng nhập lý do bên dưới.</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Bạn có chắc chắn muốn từ chối yêu cầu này?
+                            Vui lòng nhập lý do bên dưới.</p>
+                        <form id="rejectForm" onsubmit="handleReject(event)" class="mt-4">
+                            <input type="hidden" name="ticket_id" id="rejectTicketId">
+                            <textarea name="reason" rows="3" required
+                                class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-[#111418] dark:text-white shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 text-sm"
+                                placeholder="Nhập lý do từ chối..."></textarea>
+                            <div class="mt-5 sm:flex sm:flex-row-reverse gap-2">
+                                <button type="submit"
+                                    class="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm">
+                                    Từ chối
+                                </button>
+                                <button type="button" onclick="closeRejectModal()"
+                                    class="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:w-auto sm:text-sm dark:bg-transparent dark:text-white dark:border-gray-600 dark:hover:bg-white/5">
+                                    Hủy
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function handleAssign(event, ticketId) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch(`/assign_ticket/${ticketId}`, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (response.ok) {
+                removeTicketRow(ticketId);
+                // Optional: Show toast success
+            } else {
+                alert('Có lỗi xảy ra khi phân công.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Có lỗi kết nối.');
+        }
+    }
+
+    function openRejectModal(ticketId) {
+        const modal = document.getElementById('rejectModal');
+        document.getElementById('rejectTicketId').value = ticketId;
+        modal.classList.remove('hidden');
+    }
+
+    function closeRejectModal() {
+        const modal = document.getElementById('rejectModal');
+        modal.classList.add('hidden');
+    }
+
+    async function handleReject(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const ticketId = document.getElementById('rejectTicketId').value;
+
+        try {
+            const response = await fetch(`/reject_ticket/${ticketId}`, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (response.ok) {
+                closeRejectModal();
+                removeTicketRow(ticketId);
+            } else {
+                alert('Có lỗi xảy ra khi từ chối.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Có lỗi kết nối.');
+        }
+    }
+
+    function removeTicketRow(ticketId) {
+        const row = document.getElementById(`ticket-row-${ticketId}`);
+        if (row) {
+            row.remove();
+
+            // Update Queue Count
+            const badge = document.querySelector('.bg-red-100.text-red-700');
+            if (badge) {
+                const currentCount = parseInt(badge.textContent);
+                if (currentCount > 0) {
+                    badge.textContent = currentCount - 1;
+                }
+            }
+
+            // Check if table is empty
+            const tbody = document.querySelector('tbody');
+            if (tbody.children.length === 0) {
+                location.reload(); // Reload to show empty state message
+            }
+        }
+    }
+</script>
 {% endblock %}
