@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Phân công Yêu cầu - TicketSys{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h2 class="text-2xl font-bold dark:text-white tracking-tight">Phân công Yêu cầu</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Xử lý các yêu cầu mới và phân công cho nhân viên.</p>
+    </div>
+    <div class="flex items-center gap-2">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Hàng đợi:</span>
+        <span
+            class="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-bold px-2.5 py-1 rounded-full">{{
+            new_tickets|length }}</span>
+    </div>
+</div>
+
+<div
+    class="bg-white dark:bg-[#111418] border border-slate-200 dark:border-[#3b4754] rounded-xl overflow-hidden shadow-sm flex flex-col h-[calc(100vh-180px)]">
+    <div class="overflow-y-auto custom-scrollbar flex-1">
+        <table class="w-full text-left">
+            <thead class="sticky top-0 z-10">
+                <tr
+                    class="bg-slate-50 dark:bg-slate-800/80 backdrop-blur text-slate-500 dark:text-[#9dabb9] text-xs font-bold uppercase tracking-wider">
+                    <th class="px-6 py-4">Mã số</th>
+                    <th class="px-6 py-4">Người yêu cầu</th>
+                    <th class="px-6 py-4">Tiêu đề</th>
+                    <th class="px-6 py-4">Độ ưu tiên</th>
+                    <th class="px-6 py-4">Thời gian tạo</th>
+                    <th class="px-6 py-4">Phân công</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                {% for ticket in new_tickets %}
+                <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                    <td class="px-6 py-4 font-mono text-xs text-primary font-bold">#{{ ticket.id }}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                                {{ ticket.creator.username[0]|upper if ticket.creator and ticket.creator.username else
+                                '?' }}
+                            </div>
+                            <span class="text-sm font-medium dark:text-white">{{ ticket.creator.full_name if
+                                ticket.creator else 'Unknown' }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm dark:text-slate-300">
+                        <span class="block truncate max-w-[250px] font-medium">{{ ticket.title }}</span>
+                        <span class="text-xs text-slate-500">{{ ticket.category }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if ticket.priority == 'Critical' %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-500">Khẩn
+                            cấp</span>
+                        {% elif ticket.priority == 'High' %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-500">Cao</span>
+                        {% else %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400">{{
+                            ticket.priority }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-xs text-slate-500">
+                        {{ ticket.created_at.strftime('%H:%M %d/%m') }}
+                    </td>
+                    <td class="px-6 py-4">
+                        <form action="{{ url_for('leader.assign_ticket', ticket_id=ticket.id) }}" method="POST"
+                            class="flex gap-2">
+                            <select name="staff_id" required
+                                class="text-xs py-1.5 pl-2 pr-8 rounded border-slate-200 bg-slate-50 dark:bg-[#283039] dark:border-slate-700 dark:text-white focus:ring-primary focus:border-primary">
+                                <option value="" disabled selected>Chọn nhân viên...</option>
+                                {% for staff in staff_members %}
+                                <option value="{{ staff.id }}">{{ staff.full_name }} ({{ staff.username }})</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit"
+                                class="bg-primary hover:bg-primary/90 text-white rounded p-1.5 transition-colors shadow-sm">
+                                <span class="material-symbols-outlined text-sm">person_add</span>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+
+                {% if not new_tickets %}
+                <tr>
+                    <td colspan="6" class="px-6 py-24 text-center text-slate-500 dark:text-slate-400">
+                        <div
+                            class="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="material-symbols-outlined text-emerald-500 text-3xl">check_circle</span>
+                        </div>
+                        <h4 class="text-sm font-bold dark:text-white mb-1">Tuyệt vời!</h4>
+                        <p class="text-sm">Không còn yêu cầu nào cần phân công.</p>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

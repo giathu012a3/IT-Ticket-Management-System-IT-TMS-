@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Tạo yêu cầu mới - TicketSys{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="flex items-center gap-2 mb-6 text-sm text-slate-500">
+        <a href="{{ url_for('user.user_dashboard') }}" class="hover:text-primary transition-colors">Yêu cầu của tôi</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <span class="text-slate-900 dark:text-white font-medium">Tạo mới</span>
+    </div>
+
+    <div
+        class="bg-white dark:bg-[#111418] rounded-xl border border-slate-200 dark:border-[#3b4754] overflow-hidden shadow-sm">
+        <div class="p-8 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-white/5">
+            <h1 class="text-xl font-bold dark:text-white mb-2">Gửi yêu cầu hỗ trợ</h1>
+            <p class="text-slate-500 dark:text-slate-400 text-sm">Vui lòng cung cấp thông tin chi tiết để chúng tôi hỗ
+                trợ tốt nhất.</p>
+        </div>
+
+        <form method="POST" class="p-8 space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="col-span-2">
+                    <label
+                        class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Tiêu
+                        đề</label>
+                    <input type="text" name="title" required
+                        class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#283039] focus:border-primary focus:ring-primary transition-colors py-2.5 px-4"
+                        placeholder="Ví dụ: Không thể truy cập VPN">
+                </div>
+
+                <div>
+                    <label
+                        class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Danh
+                        mục</label>
+                    <div class="relative">
+                        <select name="category" required
+                            class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#283039] focus:border-primary focus:ring-primary appearance-none py-2.5 px-4">
+                            <option value="" disabled selected>Chọn danh mục...</option>
+                            <option value="Hardware">Phần cứng (Hardware)</option>
+                            <option value="Software">Phần mềm (Software)</option>
+                            <option value="Network">Mạng (Network)</option>
+                            <option value="Account">Tài khoản (Account)</option>
+                            <option value="Other">Khác</option>
+                        </select>
+                        <span
+                            class="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none">expand_more</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label
+                        class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mức
+                        độ ưu tiên</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="priority" value="Low" class="peer sr-only">
+                            <div
+                                class="text-center py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 peer-checked:bg-slate-800 peer-checked:text-white peer-checked:border-slate-800 transition-all text-sm font-medium">
+                                Thấp</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="priority" value="Medium" class="peer sr-only" checked>
+                            <div
+                                class="text-center py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all text-sm font-medium">
+                                Vừa</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="priority" value="High" class="peer sr-only">
+                            <div
+                                class="text-center py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 peer-checked:bg-orange-600 peer-checked:text-white peer-checked:border-orange-600 transition-all text-sm font-medium">
+                                Cao</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="priority" value="Critical" class="peer sr-only">
+                            <div
+                                class="text-center py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 peer-checked:bg-red-600 peer-checked:text-white peer-checked:border-red-600 transition-all text-sm font-medium">
+                                Khẩn</div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-span-2">
+                    <label
+                        class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mô
+                        tả chi tiết</label>
+                    <textarea name="description" rows="5" required
+                        class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#283039] focus:border-primary focus:ring-primary transition-colors p-4 block"
+                        placeholder="Vui lòng mô tả vấn đề của bạn..."></textarea>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+                <a href="{{ url_for('user.user_dashboard') }}"
+                    class="px-6 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">Hủy
+                    bỏ</a>
+                <button type="submit"
+                    class="bg-primary hover:bg-primary/90 text-white font-bold px-8 py-2.5 rounded-lg shadow-lg shadow-primary/20 transition-transform active:scale-95 flex items-center">
+                    <span class="material-symbols-outlined mr-2">send</span>
+                    Gửi yêu cầu
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

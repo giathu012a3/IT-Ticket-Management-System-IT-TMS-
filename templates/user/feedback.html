@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Đánh giá dịch vụ - TicketSys{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div
+        class="bg-white dark:bg-[#111418] rounded-2xl shadow-xl border border-slate-200 dark:border-[#3b4754] overflow-hidden">
+        <div class="bg-emerald-600 p-8 text-center">
+            <div
+                class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                <span class="material-symbols-outlined text-white text-3xl">sentiment_satisfied</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white mb-2">Yêu cầu đã được giải quyết!</h1>
+            <p class="text-emerald-100">Chúng tôi rất mong nhận được đánh giá từ bạn.</p>
+        </div>
+
+        <form method="POST" class="p-8 space-y-8">
+            <div class="text-center">
+                <p class="text-slate-500 dark:text-slate-400 mb-4 font-medium">Bạn đánh giá thế nào về việc hỗ trợ cho
+                    yêu cầu:</p>
+                <div
+                    class="bg-slate-50 dark:bg-[#283039] rounded-lg p-3 inline-block border border-slate-100 dark:border-slate-700 mb-6">
+                    <span class="font-bold text-slate-800 dark:text-white">{{ ticket.title }}</span>
+                </div>
+
+                <div class="flex flex-row-reverse justify-center gap-2 group">
+                    <input type="radio" name="rating" value="5" id="star5" class="peer/5 sr-only required">
+                    <label for="star5"
+                        class="text-slate-300 peer-checked/5:text-amber-400 hover:!text-amber-400 peer-hover/5:text-amber-400 cursor-pointer transition-colors duration-200">
+                        <span class="material-symbols-outlined text-4xl"
+                            style="font-variation-settings: 'FILL' 1;">star</span>
+                    </label>
+
+                    <input type="radio" name="rating" value="4" id="star4" class="peer/4 sr-only">
+                    <label for="star4"
+                        class="text-slate-300 peer-checked/4:text-amber-400 hover:!text-amber-400 peer-hover/4:text-amber-400 cursor-pointer transition-colors duration-200">
+                        <span class="material-symbols-outlined text-4xl"
+                            style="font-variation-settings: 'FILL' 1;">star</span>
+                    </label>
+
+                    <input type="radio" name="rating" value="3" id="star3" class="peer/3 sr-only">
+                    <label for="star3"
+                        class="text-slate-300 peer-checked/3:text-amber-400 hover:!text-amber-400 peer-hover/3:text-amber-400 cursor-pointer transition-colors duration-200">
+                        <span class="material-symbols-outlined text-4xl"
+                            style="font-variation-settings: 'FILL' 1;">star</span>
+                    </label>
+
+                    <input type="radio" name="rating" value="2" id="star2" class="peer/2 sr-only">
+                    <label for="star2"
+                        class="text-slate-300 peer-checked/2:text-amber-400 hover:!text-amber-400 peer-hover/2:text-amber-400 cursor-pointer transition-colors duration-200">
+                        <span class="material-symbols-outlined text-4xl"
+                            style="font-variation-settings: 'FILL' 1;">star</span>
+                    </label>
+
+                    <input type="radio" name="rating" value="1" id="star1" class="peer/1 sr-only">
+                    <label for="star1"
+                        class="text-slate-300 peer-checked/1:text-amber-400 hover:!text-amber-400 peer-hover/1:text-amber-400 cursor-pointer transition-colors duration-200">
+                        <span class="material-symbols-outlined text-4xl"
+                            style="font-variation-settings: 'FILL' 1;">star</span>
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Ý kiến đóng góp (Tùy
+                    chọn)</label>
+                <textarea name="comment" rows="4"
+                    class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] focus:bg-white dark:focus:bg-[#283039] text-slate-900 dark:text-white focus:border-emerald-500 focus:ring-emerald-500 transition-colors p-4 block text-sm"
+                    placeholder="Hãy cho chúng tôi biết bạn hài lòng về điều gì..."></textarea>
+            </div>
+
+            <div class="flex items-center justify-between pt-4">
+                <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}"
+                    class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-sm font-medium">Bỏ
+                    qua & Đóng</a>
+                <button type="submit"
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-lg shadow-lg shadow-emerald-500/20 transition-transform active:scale-95">
+                    Gửi đánh giá
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

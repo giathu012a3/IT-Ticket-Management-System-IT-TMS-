@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Quản trị Hệ thống - TicketSys{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-end">
+    <div>
+        <h1 class="text-2xl font-bold dark:text-white tracking-tight">Quản trị Hệ thống</h1>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Quản lý tài khoản và số liệu hệ thống.</p>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tổng Yêu cầu</h3>
+            <span class="material-symbols-outlined text-blue-500">confirmation_number</span>
+        </div>
+        <p class="text-3xl font-bold text-slate-900 dark:text-white">{{ total_tickets }}</p>
+        <p class="text-xs text-slate-400 mt-1">Toàn bộ thời gian</p>
+    </div>
+
+    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Đánh giá</h3>
+            <span class="material-symbols-outlined text-amber-500">star</span>
+        </div>
+        <p class="text-3xl font-bold text-slate-900 dark:text-white">{{ avg_rating }}</p>
+        <div class="flex text-amber-400 mt-1 text-xs">
+            Trung bình
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Người dùng</h3>
+            <span class="material-symbols-outlined text-primary">group</span>
+        </div>
+        <p class="text-3xl font-bold text-slate-900 dark:text-white">{{ users|length }}</p>
+        <p class="text-xs text-slate-400 mt-1">Tài khoản hoạt động</p>
+    </div>
+
+    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Kỹ thuật viên</h3>
+            <span class="material-symbols-outlined text-purple-500">engineering</span>
+        </div>
+        {% set staff_count = users | selectattr("role", "equalto", "staff") | list | length %}
+        <p class="text-3xl font-bold text-slate-900 dark:text-white">{{ staff_count }}</p>
+        <p class="text-xs text-slate-400 mt-1">Nhân sự IT</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- User List -->
+    <div
+        class="lg:col-span-2 bg-white dark:bg-[#111418] border border-slate-200 dark:border-[#3b4754] rounded-xl overflow-hidden shadow-sm flex flex-col">
+        <div
+            class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-white/5 flex justify-between items-center">
+            <h3 class="text-sm font-bold dark:text-white">Danh sách Tài khoản</h3>
+            <button class="text-xs font-medium text-primary hover:underline">Xuất CSV</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr
+                        class="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-[#9dabb9] text-xs font-bold uppercase tracking-wider">
+                        <th class="px-6 py-4">Người dùng</th>
+                        <th class="px-6 py-4">Vai trò</th>
+                        <th class="px-6 py-4">Trạng thái</th>
+                        <th class="px-6 py-4 text-right">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for user in users %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                                    {{ user.username[0]|upper }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold dark:text-white">{{ user.full_name }}</p>
+                                    <p class="text-xs text-slate-500">@{{ user.username }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if user.role == 'admin' %}
+                            <span
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300">Quản
+                                trị viên</span>
+                            {% elif user.role == 'leader' %}
+                            <span
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">Quản
+                                lý</span>
+                            {% elif user.role == 'staff' %}
+                            <span
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">Kỹ
+                                thuật viên</span>
+                            {% else %}
+                            <span
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">Người
+                                dùng</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                <span class="text-xs text-slate-600 dark:text-slate-400">Hoạt động</span>
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                <span class="material-symbols-outlined text-lg">more_vert</span>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Create User Form -->
+    <div
+        class="bg-white dark:bg-[#111418] border border-slate-200 dark:border-[#3b4754] rounded-xl overflow-hidden shadow-sm h-fit sticky top-24">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-white/5">
+            <h3 class="text-sm font-bold dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">person_add</span>
+                Tạo tài khoản mới
+            </h3>
+        </div>
+        <form action="{{ url_for('admin.create_user') }}" method="POST" class="p-6 space-y-4">
+            <div>
+                <label
+                    class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Họ
+                    và tên</label>
+                <input type="text" name="full_name" required
+                    class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white text-sm focus:ring-primary focus:border-primary"
+                    placeholder="Ví dụ: Nguyễn Văn A">
+            </div>
+
+            <div>
+                <label
+                    class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Tên
+                    đăng nhập</label>
+                <input type="text" name="username" required
+                    class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white text-sm focus:ring-primary focus:border-primary"
+                    placeholder="Ví dụ: anv">
+            </div>
+
+            <div>
+                <label
+                    class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Mật
+                    khẩu</label>
+                <input type="password" name="password" required
+                    class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white text-sm focus:ring-primary focus:border-primary"
+                    placeholder="••••••••">
+            </div>
+
+            <div>
+                <label
+                    class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Vai
+                    trò</label>
+                <select name="role" required
+                    class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white text-sm focus:ring-primary focus:border-primary">
+                    <option value="user">User - Người dùng thường</option>
+                    <option value="staff">Staff - Kỹ thuật viên</option>
+                    <option value="leader">Leader - Quản lý IT</option>
+                    <option value="admin">Admin - Quản trị hệ thống</option>
+                </select>
+            </div>
+
+            <button type="submit"
+                class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded-lg shadow-lg shadow-primary/20 transition-all active:scale-95 text-sm mt-2">
+                Tạo tài khoản
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html class="dark" lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Đăng nhập hệ thống - Quản lý yêu cầu</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3b82f6",
+                        "security-red": "#ef4444",
+                        "background-dark": "#0a0c10",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass-card {
+                background: rgba(255, 255, 255, 0.03);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .geometric-bg {
+                background-color: #0a0c10;
+                background-image: 
+                    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0, transparent 50%), 
+                    radial-gradient(at 100% 100%, rgba(30, 41, 59, 0.4) 0, transparent 50%),
+                    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            }
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+
+<body class="geometric-bg min-h-screen flex flex-col font-display text-slate-200">
+    <header class="w-full flex items-center justify-between px-8 py-6 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="size-9 bg-white flex items-center justify-center rounded">
+                <span class="material-symbols-outlined text-background-dark font-bold">shield</span>
+            </div>
+            <div class="flex flex-col">
+                <h2 class="text-white text-lg font-bold leading-tight tracking-tight uppercase">SupportFlow</h2>
+                <span class="text-[10px] text-primary font-bold tracking-[0.2em] uppercase">Hệ thống nội bộ</span>
+            </div>
+        </div>
+        <div class="hidden md:block">
+            <div class="flex items-center gap-2 px-3 py-1.5 border border-white/10 rounded-full bg-white/5">
+                <div class="size-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Trạng thái: An toàn</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col items-center justify-center p-6">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="mb-6 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+            {{ messages[0] }}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div
+            class="mb-8 flex items-center gap-3 px-4 py-2 bg-security-red/10 border border-security-red/20 rounded-lg text-security-red">
+            <span class="material-symbols-outlined text-xl">gpp_maybe</span>
+            <span class="text-xs font-bold uppercase tracking-widest text-center">Chỉ dành cho nhân viên nội bộ</span>
+        </div>
+
+        <div class="w-full max-w-[440px] glass-card rounded-2xl shadow-2xl overflow-hidden p-10">
+            <div class="text-center mb-10">
+                <h1 class="text-white text-2xl font-light tracking-tight mb-2">Cổng đăng nhập</h1>
+                <p class="text-slate-400 text-sm">Vui lòng xác thực danh tính để truy cập</p>
+            </div>
+
+            <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-6">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Tên đăng nhập</label>
+                    <div class="relative">
+                        <span
+                            class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">account_circle</span>
+                        <input name="username"
+                            class="form-input w-full rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-slate-600 focus:ring-1 focus:ring-primary/50 focus:border-primary/50 h-12 pl-12 text-sm transition-all"
+                            placeholder="employee@company.com" type="text" required />
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center ml-1">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Mật khẩu</label>
+                    </div>
+                    <div class="relative">
+                        <span
+                            class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">lock</span>
+                        <input name="password"
+                            class="form-input w-full rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-slate-600 focus:ring-1 focus:ring-primary/50 focus:border-primary/50 h-12 pl-12 text-sm transition-all"
+                            placeholder="••••••••••••" type="password" required />
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 py-1">
+                    <input
+                        class="w-4 h-4 rounded bg-white/5 border-white/10 text-primary focus:ring-offset-background-dark focus:ring-primary cursor-pointer"
+                        id="remember" type="checkbox" />
+                    <label class="text-xs text-slate-400 cursor-pointer font-medium" for="remember">Ghi nhớ đăng nhập
+                        (8h)</label>
+                </div>
+                <button type="submit"
+                    class="w-full bg-white hover:bg-slate-200 text-background-dark font-bold py-4 rounded-lg transition-all flex items-center justify-center gap-2 mt-4">
+                    <span class="tracking-widest uppercase text-sm">Đăng nhập an toàn</span>
+                    <span class="material-symbols-outlined text-lg">verified_user</span>
+                </button>
+            </form>
+
+            <!-- Usage Tip -->
+            <div class="mt-6 pt-6 border-t border-white/5 text-center">
+                <p class="text-[10px] text-slate-600">
+                    Thử nghiệm: <span class="font-mono text-slate-400">user</span>, <span
+                        class="font-mono text-slate-400">leader</span>, <span
+                        class="font-mono text-slate-400">staff</span>, <span
+                        class="font-mono text-slate-400">admin</span>
+                    (pass: <span class="font-mono text-slate-400">password</span>)
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-12 flex flex-col items-center gap-6">
+            <div class="flex items-center gap-8">
+                <a class="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-[0.2em] transition-colors"
+                    href="#">Chính sách</a>
+                <a class="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-[0.2em] transition-colors"
+                    href="#">Kiểm toán</a>
+                <a class="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-[0.2em] transition-colors"
+                    href="#">Hỗ trợ</a>
+            </div>
+            <div class="flex items-center gap-2 text-slate-600">
+                <span class="material-symbols-outlined text-sm">enhanced_encryption</span>
+                <span class="text-[10px] uppercase tracking-widest">Mã hóa đầu cuối 256-bit</span>
+            </div>
+        </div>
+    </main>
+
+    <footer class="py-8 text-center border-t border-white/5 bg-black/20 shrink-0">
+        <p class="text-[10px] text-slate-500 uppercase tracking-widest">© 2024 SupportFlow Systems • Thông tin nội bộ
+        </p>
+    </footer>
+</body>
+
+</html>

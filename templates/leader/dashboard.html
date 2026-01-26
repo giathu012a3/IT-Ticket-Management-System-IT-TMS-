@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Tổng quan Quản lý - TicketSys{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-2xl font-bold dark:text-white tracking-tight">Tổng quan Hoạt động</h2>
+    <p class="text-slate-500 dark:text-slate-400 text-sm">Theo dõi hiệu suất đội ngũ và tình trạng hệ thống.</p>
+</div>
+
+<!-- Key Metrics -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div
+        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
+        <div>
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Tổng yêu cầu</p>
+            <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ total_tickets }}</h3>
+        </div>
+        <div
+            class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+            <span class="material-symbols-outlined">confirmation_number</span>
+        </div>
+    </div>
+
+    <div
+        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
+        <div>
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Đã giải quyết</p>
+            <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ resolved_tickets }}</h3>
+        </div>
+        <div
+            class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <span class="material-symbols-outlined">check_circle</span>
+        </div>
+    </div>
+
+    <div
+        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
+        <div>
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Tỷ lệ hoàn thành</p>
+            <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ completion_rate }}%</h3>
+        </div>
+        <div
+            class="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
+            <span class="material-symbols-outlined">pie_chart</span>
+        </div>
+    </div>
+</div>
+
+<!-- Staff Performance -->
+<div
+    class="bg-white dark:bg-[#111418] border border-slate-200 dark:border-[#3b4754] rounded-xl overflow-hidden shadow-sm">
+    <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+        <h3 class="font-bold dark:text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">groups</span>
+            Hiệu suất Nhân viên
+        </h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead
+                class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-[#9dabb9] text-xs font-bold uppercase tracking-wider">
+                <tr>
+                    <th class="px-6 py-4">Nhân viên</th>
+                    <th class="px-6 py-4 text-center">Đang xử lý</th>
+                    <th class="px-6 py-4 text-center">Đã giải quyết</th>
+                    <th class="px-6 py-4 text-center">Khối lượng công việc</th>
+                    <th class="px-6 py-4 text-right">Chi tiết</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                {% for staff in staff_members %}
+                {% set assigned_count = staff.tickets_assigned | length %}
+                {% set resolved_count = staff.tickets_assigned | selectattr("status", "in", ["Resolved", "Closed"]) |
+                list | length %}
+                {% set pending_count = assigned_count - resolved_count %}
+
+                <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-600 dark:text-slate-300">
+                                {{ staff.username[0]|upper if staff.username else '?' }}
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold dark:text-white">{{ staff.full_name }}</p>
+                                <p class="text-xs text-slate-500 uppercase tracking-wider">Staff</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span
+                            class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-500">
+                            {{ pending_count }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span
+                            class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-500">
+                            {{ resolved_count }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden flex">
+                            <!-- Simple visual of completion ratio -->
+                            {% set width = (resolved_count / assigned_count * 100)|int if assigned_count > 0 else 0 %}
+                            <div class="bg-emerald-500 h-2" style="width: {{ width }}%"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-1 text-center">{{ width }}% hoàn thành</p>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <!-- Link to filtered view for this staff could go here later -->
+                        <span
+                            class="text-slate-400 cursor-not-allowed material-symbols-outlined text-sm">more_horiz</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

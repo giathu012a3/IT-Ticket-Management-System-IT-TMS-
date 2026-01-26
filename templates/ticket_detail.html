@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Yêu cầu #{{ ticket.id }} - TicketSys{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-start justify-between mb-6">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <span class="font-mono text-sm font-bold text-slate-400">#{{ ticket.id }}</span>
+                {% set status_colors = {
+                'New': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-500',
+                'Assigned': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-500',
+                'In Progress': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-500',
+                'Waiting': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-500',
+                'Resolved': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-500',
+                'Closed': 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400'
+                } %}
+                {% set status_labels = {
+                'New': 'Mới',
+                'Assigned': 'Đã giao',
+                'In Progress': 'Đang xử lý',
+                'Waiting': 'Chờ phản hồi',
+                'Resolved': 'Đã giải quyết',
+                'Closed': 'Đóng'
+                } %}
+                <span
+                    class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider {{ status_colors.get(ticket.status, 'bg-slate-100') }}">
+                    {{ status_labels.get(ticket.status, ticket.status) }}
+                </span>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ ticket.title }}</h1>
+        </div>
+
+        <!-- Action Buttons based on Role -->
+        <div class="flex gap-2">
+            {% if current_user.role == 'user' and ticket.status == 'Resolved' %}
+            <a href="{{ url_for('user.ticket_feedback', ticket_id=ticket.id) }}"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg shadow-lg shadow-emerald-500/20 flex items-center transition-all animate-pulse">
+                <span class="material-symbols-outlined mr-2">star</span>
+                Đánh giá & Đóng
+            </a>
+            {% endif %}
+
+            {% if current_user.role in ['staff', 'leader'] %}
+            {% if ticket.status in ['Resolved', 'Closed'] %}
+            <!-- Disabled State -->
+            <button disabled
+                class="bg-slate-100 dark:bg-white/5 text-slate-400 font-bold px-4 py-2 rounded-lg cursor-not-allowed flex items-center">
+                <span class="material-symbols-outlined text-sm mr-2">lock</span>
+                Đã khóa
+            </button>
+            {% else %}
+            <form action="{{ url_for('staff.update_ticket_status', ticket_id=ticket.id) }}" method="POST"
+                class="flex items-center gap-2">
+                <select name="status"
+                    class="rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-[#283039] dark:text-white py-2 pl-3 pr-10 text-sm focus:ring-primary focus:border-primary shadow-sm">
+                    <option value="In Progress" {% if ticket.status=='In Progress' %}selected{% endif %}>Đang xử lý
+                    </option>
+                    <option value="Waiting" {% if ticket.status=='Waiting' %}selected{% endif %}>Chờ phản hồi</option>
+                    <option value="Resolved" {% if ticket.status=='Resolved' %}selected{% endif %}>Đã giải quyết
+                    </option>
+                </select>
+                <button type="submit"
+                    class="bg-slate-900 dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 text-white font-bold px-4 py-2 rounded-lg transition-colors">
+                    Cập nhật
+                </button>
+            </form>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Content: Description & Chat -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Ticket Description -->
+            <div
+                class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-slate-200 dark:border-[#3b4754] p-8">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Mô tả</h3>
+                <div
+                    class="prose prose-slate dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 text-sm leading-relaxed">
+                    {{ ticket.description }}
+                </div>
+                <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                    <div
+                        class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                        {{ ticket.creator.username[0]|upper }}
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold dark:text-white">{{ ticket.creator.full_name }}</p>
+                        <p class="text-xs text-slate-500">Đã tạo vào {{ ticket.created_at.strftime('%d/%m/%Y lúc %H:%M')
+                            }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversation -->
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center">
+                    <span class="material-symbols-outlined mr-2">chat</span>
+                    Trao đổi
+                </h3>
+
+                <div class="space-y-6 mb-6">
+                    {% for comment in ticket.comments %}
+                    {% if comment.is_internal %}
+                    {% if current_user.role != 'user' %}
+                    <div
+                        class="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl p-4 ml-8 relative">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="bg-amber-200 text-amber-800 text-[10px] font-bold px-1.5 rounded uppercase tracking-wider">Ghi
+                                    chú nội bộ</span>
+                                <span class="text-xs font-bold text-slate-700 dark:text-amber-400">{{
+                                    comment.author.full_name }}</span>
+                            </div>
+                            <span class="text-xs text-slate-400">{{ comment.created_at.strftime('%H:%M') }}</span>
+                        </div>
+                        <p class="text-slate-700 dark:text-amber-100 text-sm">{{ comment.content }}</p>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div
+                        class="group flex gap-4 {% if comment.user_id == current_user.id %}flex-row-reverse{% endif %}">
+                        <div
+                            class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                            {{ comment.author.username[0]|upper }}
+                        </div>
+                        <div class="max-w-[85%]">
+                            <div
+                                class="rounded-2xl p-4 shadow-sm border {% if comment.user_id == current_user.id %}bg-primary text-white border-primary{% else %}bg-white dark:bg-[#111418] border-slate-200 dark:border-[#3b4754] dark:text-slate-200{% endif %}">
+                                <p class="text-sm leading-relaxed">{{ comment.content }}</p>
+                            </div>
+                            <p
+                                class="text-[10px] text-slate-400 mt-1 {% if comment.user_id == current_user.id %}text-right{% endif %}">
+                                {{ comment.author.full_name }} • {{ comment.created_at.strftime('%H:%M') }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Reply Box -->
+                {% if ticket.status not in ['Resolved', 'Closed'] %}
+                <form action="{{ url_for('user.add_comment', ticket_id=ticket.id) }}" method="POST"
+                    class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-slate-200 dark:border-[#3b4754] p-4 relative focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
+                    <textarea name="content" required rows="3"
+                        class="w-full border-0 focus:ring-0 text-slate-700 dark:text-slate-200 text-sm resize-none bg-transparent placeholder-slate-400"
+                        placeholder="Viết phản hồi tại đây..."></textarea>
+
+                    <div
+                        class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center">
+                            {% if current_user.role != 'user' %}
+                            <label
+                                class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 select-none">
+                                <input type="checkbox" name="is_internal"
+                                    class="rounded border-slate-300 text-amber-500 focus:ring-amber-500">
+                                Ghi chú nội bộ
+                            </label>
+                            {% endif %}
+                        </div>
+                        <button type="submit"
+                            class="bg-primary hover:bg-primary/90 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors shadow-sm">
+                            Gửi phản hồi
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <div
+                    class="bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center text-sm text-slate-500 flex flex-col items-center gap-2">
+                    <span class="material-symbols-outlined text-slate-400">lock_clock</span>
+                    <span>Yêu cầu này đã hoàn tất. Không thể thực hiện thêm thao tác.</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar: Meta Info -->
+        <div class="space-y-6">
+            <div
+                class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-slate-200 dark:border-[#3b4754] p-6">
+                <h3 class="font-bold text-slate-900 dark:text-white mb-4 text-sm uppercase tracking-wider">Thông tin
+                </h3>
+                <dl class="space-y-4 text-sm">
+                    <div>
+                        <dt class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase">Danh mục
+                        </dt>
+                        <dd class="font-medium text-slate-900 dark:text-white flex items-center">
+                            <span class="material-symbols-outlined text-base mr-2 text-slate-400">folder</span>
+                            {{ ticket.category }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase">Độ ưu tiên
+                        </dt>
+                        <dd class="font-medium text-slate-900 dark:text-white flex items-center">
+                            {% if ticket.priority == 'Critical' %}
+                            <span class="material-symbols-outlined text-base mr-2 text-red-500">priority_high</span>
+                            <span class="text-red-600">Khẩn cấp</span>
+                            {% elif ticket.priority == 'High' %}
+                            <span class="material-symbols-outlined text-base mr-2 text-orange-500">priority_high</span>
+                            <span class="text-orange-500">Cao</span>
+                            {% else %}
+                            <span class="material-symbols-outlined text-base mr-2 text-slate-400">flag</span>
+                            {{ ticket.priority }}
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase">Người xử lý
+                        </dt>
+                        <dd class="font-medium text-slate-900 dark:text-white flex items-center">
+                            <span class="material-symbols-outlined text-base mr-2 text-slate-400">support_agent</span>
+                            {{ ticket.assigned_to.full_name if ticket.assigned_to else 'Chưa phân công' }}
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+
+            {% if ticket.status == 'Closed' and ticket.feedback %}
+            <div
+                class="bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/30 p-6">
+                <h3 class="font-bold text-emerald-900 dark:text-emerald-400 mb-2">Đánh giá từ khách hàng</h3>
+                <div class="flex text-amber-400 mb-2 gap-1">
+                    {% for i in range(ticket.feedback.rating) %}
+                    <span class="material-symbols-outlined text-sm"
+                        style="font-variation-settings: 'FILL' 1;">star</span>
+                    {% endfor %}
+                </div>
+                <p class="text-emerald-800 dark:text-emerald-200 text-sm italic">"{{ ticket.feedback.comment }}"</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Công việc của tôi - TicketSys{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h2 class="text-2xl font-bold dark:text-white tracking-tight">Công việc của tôi</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Danh sách yêu cầu được phân công cho bạn.</p>
+    </div>
+    <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Chờ xử lý:</span>
+            <span
+                class="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full">{{
+                my_pending }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Đã xong:</span>
+            <span
+                class="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-full">{{
+                my_resolved }}</span>
+        </div>
+    </div>
+</div>
+
+<div
+    class="bg-white dark:bg-[#111418] border border-slate-200 dark:border-[#3b4754] rounded-xl overflow-hidden flex flex-col shadow-sm">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead>
+                <tr
+                    class="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-[#9dabb9] text-xs font-bold uppercase tracking-wider">
+                    <th class="px-6 py-4">Trạng thái</th>
+                    <th class="px-6 py-4">Yêu cầu</th>
+                    <th class="px-6 py-4">Độ ưu tiên</th>
+                    <th class="px-6 py-4">Giờ tạo</th>
+                    <th class="px-6 py-4 text-right">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                {% for ticket in tickets %}
+                <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                    <td class="px-6 py-4">
+                        {% set status_colors = {
+                        'New': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-500',
+                        'Assigned': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-500',
+                        'In Progress': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-500',
+                        'Waiting': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-500',
+                        'Resolved': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-500',
+                        'Closed': 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400'
+                        } %}
+                        {% set status_labels = {
+                        'New': 'Mới',
+                        'Assigned': 'Đã giao',
+                        'In Progress': 'Đang xử lý',
+                        'Waiting': 'Chờ phản hồi',
+                        'Resolved': 'Đã xong',
+                        'Closed': 'Đóng'
+                        } %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider {{ status_colors.get(ticket.status, 'bg-slate-100') }}">
+                            {{ status_labels.get(ticket.status, ticket.status) }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="font-medium text-slate-900 dark:text-white">{{ ticket.title }}</div>
+                        <div class="text-xs text-slate-400 font-mono mt-0.5">#{{ ticket.id }} • {{ ticket.category }}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if ticket.priority == 'Critical' %}
+                        <span class="text-red-600 font-bold dark:text-red-500">Khẩn cấp</span>
+                        {% elif ticket.priority == 'High' %}
+                        <span class="text-orange-600 font-medium dark:text-orange-500">Cao</span>
+                        {% else %}
+                        <span class="text-slate-500 font-medium dark:text-slate-400">{{ ticket.priority }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">{{
+                        ticket.created_at.strftime('%H:%M') }}</td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}"
+                            class="inline-flex items-center gap-1 bg-white dark:bg-[#283039] border border-slate-200 dark:border-slate-700 hover:border-primary dark:hover:border-primary text-slate-700 dark:text-slate-200 hover:text-primary transition-all font-medium text-xs px-3 py-1.5 rounded shadow-sm">
+                            Xử lý
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not tickets %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                        <div
+                            class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="material-symbols-outlined text-slate-400 text-3xl">coffee</span>
+                        </div>
+                        <p>Bạn không có yêu cầu nào. Hãy thưởng thức cafe! ☕</p>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
