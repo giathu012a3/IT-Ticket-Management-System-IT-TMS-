@@ -10,7 +10,7 @@ leader_bp = Blueprint('leader', __name__)
 @leader_bp.route('/leader/dashboard')
 @login_required
 def leader_dashboard():
-    if current_user.role != 'leader':
+    if current_user.role not in ['leader', 'admin']:
         return redirect(url_for('main.index'))
     
     # Filter Logic
@@ -82,7 +82,7 @@ def leader_dashboard():
 @leader_bp.route('/leader/assignment')
 @login_required
 def assignment():
-    if current_user.role != 'leader':
+    if current_user.role not in ['leader', 'admin']:
         return redirect(url_for('main.index'))
     
     # Only fetch New or Unassigned tickets
@@ -102,7 +102,7 @@ def assignment():
 @leader_bp.route('/leader/tickets')
 @login_required
 def all_tickets():
-    if current_user.role != 'leader':
+    if current_user.role not in ['leader', 'admin']:
         return redirect(url_for('main.index'))
         
     # Filter Logic
@@ -130,7 +130,7 @@ def all_tickets():
 @leader_bp.route('/assign_ticket/<int:ticket_id>', methods=['POST'])
 @login_required
 def assign_ticket(ticket_id):
-    if current_user.role != 'leader':
+    if current_user.role not in ['leader', 'admin']:
         return redirect(url_for('main.index'))
         
     ticket = Ticket.query.get_or_404(ticket_id)
@@ -166,7 +166,7 @@ def assign_ticket(ticket_id):
 @leader_bp.route('/reject_ticket/<int:ticket_id>', methods=['POST'])
 @login_required
 def reject_ticket(ticket_id):
-    if current_user.role != 'leader':
+    if current_user.role not in ['leader', 'admin']:
         return redirect(url_for('main.index'))
         
     ticket = Ticket.query.get_or_404(ticket_id)

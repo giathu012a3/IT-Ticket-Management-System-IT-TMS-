@@ -95,7 +95,7 @@
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
     <!-- User Roles Chart -->
     <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
         <h3 class="text-sm font-bold dark:text-white mb-6">Phân bổ Vai trò</h3>
@@ -103,17 +103,37 @@
             <canvas id="roleChart"></canvas>
         </div>
     </div>
+
+    <!-- Ticket Category Chart (New) -->
+    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
+        <h3 class="text-sm font-bold dark:text-white mb-6">Danh mục Yêu cầu</h3>
+        <div class="w-full h-64 relative">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Staff Performance Chart (New) -->
+<div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm mb-8">
+    <h3 class="text-sm font-bold dark:text-white mb-6">Hiệu suất Kỹ thuật viên</h3>
+    <div class="w-full h-72 relative">
+        <canvas id="staffChart"></canvas>
+    </div>
 </div>
 
 <script id="status-data" type="application/json">{{ status_counts | tojson }}</script>
 <script id="priority-data" type="application/json">{{ priority_counts | tojson }}</script>
 <script id="role-data" type="application/json">{{ role_counts | tojson }}</script>
+<script id="category-data" type="application/json">{{ category_counts | tojson }}</script>
+<script id="staff-data" type="application/json">{{ staff_performance | tojson }}</script>
 
 <script>
     // --- Data from Flask ---
     const statusData = JSON.parse(document.getElementById('status-data').textContent);
     const priorityData = JSON.parse(document.getElementById('priority-data').textContent);
     const roleData = JSON.parse(document.getElementById('role-data').textContent);
+    const categoryData = JSON.parse(document.getElementById('category-data').textContent);
+    const staffData = JSON.parse(document.getElementById('staff-data').textContent);
 
     // --- Chart Configs ---
     Chart.defaults.color = '#64748b';
@@ -184,6 +204,52 @@
             maintainAspectRatio: false,
             plugins: {
                 legend: { position: 'bottom', labels: { usePointStyle: true } }
+            }
+        }
+    });
+
+    // 4. Category Chart
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(categoryData),
+            datasets: [{
+                data: Object.values(categoryData),
+                backgroundColor: ['#ec4899', '#f43f5e', '#8b5cf6', '#06b6d4', '#14b8a6'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true } }
+            }
+        }
+    });
+
+    // 5. Staff Chart
+    new Chart(document.getElementById('staffChart'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(staffData),
+            datasets: [{
+                label: 'Số lượng yêu cầu',
+                data: Object.values(staffData),
+                backgroundColor: '#3b82f6',
+                borderRadius: 4,
+                barThickness: 40
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
+                x: { grid: { display: false } }
+            },
+            plugins: {
+                legend: { display: false }
             }
         }
     });

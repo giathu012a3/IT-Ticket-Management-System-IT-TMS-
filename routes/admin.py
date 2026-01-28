@@ -63,6 +63,24 @@ def admin_dashboard():
     for u in users:
         role_counts[u.role] = role_counts.get(u.role, 0) + 1
         
+    # --- LEADER STATS MERGED ---
+    # 4. Tickets by Category
+    category_counts = {}
+    for t in tickets:
+        if t.category:
+            category_counts[t.category] = category_counts.get(t.category, 0) + 1
+            
+    # 5. Staff Performance (Tickets assigned)
+    staff_members = User.query.filter_by(role='staff').all()
+    staff_performance = {}
+    for staff in staff_members:
+        count = Ticket.query.filter_by(assigned_to_id=staff.id).count()
+        staff_performance[staff.full_name or staff.username] = count
+
+    # 6. Resolution Stats
+    resolved_tickets = len([t for t in tickets if t.status in ['Resolved', 'Closed']])
+    completion_rate = int((resolved_tickets / total_tickets * 100)) if total_tickets > 0 else 0
+
     return render_template('admin/dashboard.html', 
                          total_tickets=total_tickets,
                          avg_rating=round(avg_rating, 1),
@@ -70,7 +88,12 @@ def admin_dashboard():
                          status_counts=status_counts,
                          priority_counts=priority_counts,
                          role_counts=role_counts,
-                         current_range=time_range)
+                         current_range=time_range,
+                         # New Stats
+                         category_counts=category_counts,
+                         staff_performance=staff_performance,
+                         resolved_tickets=resolved_tickets,
+                         completion_rate=completion_rate)
 
 @admin_bp.route('/admin/users')
 @login_required

@@ -70,7 +70,6 @@
                         {{ ticket.created_at.strftime('%H:%M %d/%m') }}
                     </td>
                     <td class="px-6 py-4">
-                    <td class="px-6 py-4">
                         <form onsubmit="handleAssign(event, '{{ ticket.id }}')" class="flex gap-2">
                             <select name="staff_id" required
                                 class="text-xs py-1.5 pl-2 pr-8 rounded border-slate-200 bg-slate-50 dark:bg-[#283039] dark:border-slate-700 dark:text-white focus:ring-primary focus:border-primary">
