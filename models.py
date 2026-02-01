@@ -22,9 +22,10 @@ class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(20), default='New')
+    # status column removed, relying on status_id and relationship
     priority = db.Column(db.String(20), default='Medium')
     category = db.Column(db.String(50))
+    deadline = db.Column(db.DateTime) # New field for Quick Overview
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)

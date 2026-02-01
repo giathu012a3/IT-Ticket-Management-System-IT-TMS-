@@ -58,6 +58,12 @@ def create_ticket():
             description=description,
             creator_id=current_user.id
         )
+        
+        # Explicitly set status to 'New' via relationship or ID
+        new_status = TicketStatus.query.filter_by(name='New').first()
+        if new_status:
+            ticket.status_id = new_status.id
+            
         db.session.add(ticket)
         db.session.commit()
         

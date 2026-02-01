@@ -14,70 +14,237 @@ def leader_dashboard():
         return redirect(url_for('main.index'))
     
     # Filter Logic
-    time_range = request.args.get('time_range', 'all')
+    # Filter Logic
+    time_range = request.args.get('time_range', 'this_month') # Default to this_month for better dashboard view
     
+    cur_start, cur_end, prev_start, prev_end = get_date_ranges(time_range)
+    
+    # 1. Fetch Current Period Data
     query = Ticket.query
-    if time_range == '7d':
-        start_date = datetime.utcnow() - timedelta(days=7)
-        query = query.filter(Ticket.created_at >= start_date)
-    elif time_range == '30d':
-        start_date = datetime.utcnow() - timedelta(days=30)
-        query = query.filter(Ticket.created_at >= start_date)
-    elif time_range == '3m':
-        start_date = datetime.utcnow() - timedelta(days=90)
-        query = query.filter(Ticket.created_at >= start_date)
-    elif time_range == '1y':
-        start_date = datetime.utcnow() - timedelta(days=365)
-        query = query.filter(Ticket.created_at >= start_date)
+    if cur_start:
+        query = query.filter(Ticket.created_at >= cur_start, Ticket.created_at < cur_end)
         
-    all_tickets = query.all()
-    
-    # Stats logic
-    total_tickets = len(all_tickets)
-    resolved_tickets = len([t for t in all_tickets if t.status in ['Resolved', 'Closed']])
-    completion_rate = int((resolved_tickets / total_tickets * 100)) if total_tickets > 0 else 0
-    
-    # Staff Stats
-    staff_members = User.query.filter_by(role='staff').all()
-
-    # Chart Data
-    # 1. Tickets by Status
-    status_counts = {}
-    for t in all_tickets:
-        label = t.status_label
-        status_counts[label] = status_counts.get(label, 0) + 1
+    try:
+        # Filter Logic
+        time_range = request.args.get('time_range', 'this_month') # Default to this_month for better dashboard view
         
-    # 2. Tickets by Category
-    category_counts = {}
-    for t in all_tickets:
-        if t.category:
-            category_counts[t.category] = category_counts.get(t.category, 0) + 1
+        cur_start, cur_end, prev_start, prev_end = get_date_ranges(time_range)
+        
+        # 1. Fetch Current Period Data
+        query = Ticket.query
+        if cur_start:
+            query = query.filter(Ticket.created_at >= cur_start, Ticket.created_at < cur_end)
             
-    # 3. Staff Performance (Tickets assigned)
-    staff_performance = {}
-    for staff in staff_members:
-        count = Ticket.query.filter_by(assigned_to_id=staff.id).count()
-        staff_performance[staff.full_name or staff.username] = count
+        all_tickets = query.all()
+        
+        # Stats: Current
+        # Resolved in Current Range (Note: "Resolved" usually means status changed to resolved IN that period. 
+        # But for simplicity in this schema without history table, we often use updated_at or just status check on filtered tickets.
+        # If we filter by created_at, then "Resolved" means "Created AND Resolved in this period". 
+        # Usually Leader wants "Resolved in this period" regardless of creation.
+        # Let's adjust query for "Total" vs "Resolved".
+        
+        # RE-STRATEGY: 
+        # Total Tickets = Created in period
+        # Resolved Tickets = Resolved in period (updated_at)
+        
+        # 1. Total Created (Current)
+        total_query = Ticket.query
+        if cur_start:
+            total_query = total_query.filter(Ticket.created_at >= cur_start)
+        if cur_end:
+            total_query = total_query.filter(Ticket.created_at < cur_end)
+        total_tickets = total_query.count()
+        
+        # 2. Total Resolved (Current)
+        resolved_query = Ticket.query.join(TicketStatus).filter(
+            TicketStatus.name.in_(['Resolved', 'Closed']))
+        if cur_start:
+            resolved_query = resolved_query.filter(Ticket.updated_at >= cur_start, Ticket.updated_at < cur_end)
+        resolved_tickets = resolved_query.count()
+        
+        completion_rate = int((resolved_tickets / total_tickets * 100)) if total_tickets > 0 else 0
 
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({
-            'total_tickets': total_tickets,
-            'resolved_tickets': resolved_tickets,
-            'completion_rate': completion_rate,
-            'status_counts': status_counts,
-            'category_counts': category_counts,
-            'staff_performance': staff_performance
-        })
+        # 3. Growth Calculation (Deltas)
+        delta_total = 0
+        delta_resolved = 0
+        
+        if prev_start:
+            # Prev Total
+            prev_total = Ticket.query.filter(Ticket.created_at >= prev_start, Ticket.created_at < prev_end).count()
+            delta_total = total_tickets - prev_total
+            
+            # Prev Resolved
+            prev_resolved = Ticket.query.join(TicketStatus).filter(
+                TicketStatus.name.in_(['Resolved', 'Closed']),
+                Ticket.updated_at >= prev_start, 
+                Ticket.updated_at < prev_end
+            ).count()
+            delta_resolved = resolved_tickets - prev_resolved
+        
+        # NEW: Overdue Tickets (Real-time snapshot, no history comparison possible easily)
+        overdue_tickets = Ticket.query.join(TicketStatus).filter(
+            ~TicketStatus.name.in_(['Resolved', 'Closed']),
+            Ticket.deadline < datetime.utcnow()
+        ).count()
+        
+        # Staff Stats & Performance
+        staff_members = User.query.filter_by(role='staff').all()
+        
+        staff_stats = []
+        min_active = float('inf')
+        least_busy_staff = "N/A"
+        
+        staff_chart_labels = []
+        staff_chart_active = []
+        staff_chart_resolved = []
+        
+        for staff in staff_members:
+            # Active (Real-time snapshot) - Always "Now"
+            active_count = Ticket.query.join(TicketStatus).filter(
+                Ticket.assigned_to_id == staff.id,
+                TicketStatus.name == 'In Progress'
+            ).count()
+            
+            # Resolved (In Selected Filter Range)
+            r_query = Ticket.query.join(TicketStatus).filter(
+                Ticket.assigned_to_id == staff.id,
+                TicketStatus.name.in_(['Resolved', 'Closed'])
+            )
+            if cur_start:
+                r_query = r_query.filter(Ticket.updated_at >= cur_start, Ticket.updated_at < cur_end)
+            
+            resolved_count = r_query.count()
+            
+            # Performance % (Resolved / (Active + Resolved)) - Hybrid metric
+            total_load = active_count + resolved_count
+            perf = int((resolved_count / total_load * 100)) if total_load > 0 else 0
+            
+            name = staff.full_name or staff.username
+            staff_stats.append({
+                'name': name,
+                'active': active_count,
+                'resolved_month': resolved_count,
+                'performance': perf
+            })
+            
+            # For Chart
+            staff_chart_labels.append(name)
+            staff_chart_active.append(active_count)
+            staff_chart_resolved.append(resolved_count)
+            
+            # Check least busy
+            if active_count < min_active:
+                min_active = active_count
+                least_busy_staff = name
 
-    return render_template('leader/dashboard.html', 
-                         staff_members=staff_members,
-                         total_tickets=total_tickets,
-                         resolved_tickets=resolved_tickets,
-                         completion_rate=completion_rate,
-                         status_counts=status_counts,
-                         category_counts=category_counts,
-                         staff_performance=staff_performance,
-                         current_range=time_range)
+        # Chart Data (Distribution)
+        # Tickets by Status (Current Range - Created based? Or Snapshot? Usually Snapshot for Status Chart)
+        # For Status Chart, it's usually "Current State of System". We don't filter by time usually, or we filter by Created Time?
+        # "Snapshot of tickets created in range" makes more sense for "This Month's Tickets Status".
+        
+        chart_query = Ticket.query
+        if cur_start:
+            chart_query = chart_query.filter(Ticket.created_at >= cur_start, Ticket.created_at < cur_end)
+        chart_tickets = chart_query.all()
+        
+        # 1. Tickets by Status
+        status_counts = {}
+        for t in chart_tickets:
+            label = t.status_label
+            status_counts[label] = status_counts.get(label, 0) + 1
+            
+        # 2. Tickets by Category
+        category_counts = {}
+        for t in chart_tickets:
+            if t.category:
+                category_counts[t.category] = category_counts.get(t.category, 0) + 1
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'total_tickets': total_tickets,
+                'delta_total': delta_total,
+                'resolved_tickets': resolved_tickets,
+                'delta_resolved': delta_resolved,
+                'completion_rate': completion_rate,
+                'overdue_tickets': overdue_tickets,
+                'least_busy_staff': least_busy_staff,
+                'status_counts': status_counts,
+                'category_counts': category_counts,
+                'staff_labels': staff_chart_labels,
+                'staff_active': staff_chart_active,
+                'staff_resolved': staff_chart_resolved
+            })
+
+        return render_template('leader/dashboard.html', 
+                             staff_members=staff_members,
+                             total_tickets=total_tickets,
+                             delta_total=delta_total,
+                             resolved_tickets=resolved_tickets,
+                             delta_resolved=delta_resolved,
+                             completion_rate=completion_rate,
+                             overdue_tickets=overdue_tickets,
+                             least_busy_staff=least_busy_staff,
+                             staff_stats=staff_stats,
+                             status_counts=status_counts,
+                             category_counts=category_counts,
+                             staff_labels=staff_chart_labels,
+                             staff_active=staff_chart_active,
+                             staff_resolved=staff_chart_resolved,
+                             current_range=time_range)
+                             
+    except Exception as e:
+        print(f"Error in leader_dashboard: {e}")
+        import traceback
+        traceback.print_exc()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+             return jsonify({'error': str(e)}), 500
+        raise e
+
+def get_date_ranges(time_range):
+    now = datetime.utcnow()
+    
+    cur_start = None
+    cur_end = None
+    prev_start = None
+    prev_end = None
+    
+    if time_range == '7d':
+        cur_end = now
+        cur_start = now - timedelta(days=7)
+        prev_end = cur_start
+        prev_start = cur_start - timedelta(days=7)
+    elif time_range == '30d':
+        cur_end = now
+        cur_start = now - timedelta(days=30)
+        prev_end = cur_start
+        prev_start = cur_start - timedelta(days=30)
+    elif time_range == 'this_month':
+        cur_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        cur_end = now
+        # Prev: 1st of prev month
+        if now.month == 1:
+            prev_start = now.replace(year=now.year-1, month=12, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            prev_start = now.replace(month=now.month-1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        prev_end = cur_start
+    elif time_range == 'last_month':
+        # Cur: Prev Month
+        if now.month == 1:
+            cur_start = now.replace(year=now.year-1, month=12, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            cur_start = now.replace(month=now.month-1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            
+        cur_end = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Prev: Month before last
+        if cur_start.month == 1:
+            prev_start = cur_start.replace(year=cur_start.year-1, month=12, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            prev_start = cur_start.replace(month=cur_start.month-1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        prev_end = cur_start
+        
+    return cur_start, cur_end, prev_start, prev_end
 
 @leader_bp.route('/leader/assignment')
 @login_required
