@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from extensions import db
-from models import User, Ticket, Feedback
+from models import User, Ticket, Feedback, now_vn
 from datetime import datetime, timedelta
 
 admin_bp = Blueprint('admin', __name__)
@@ -21,19 +21,19 @@ def admin_dashboard():
     query_feedbacks = Feedback.query
     
     if time_range == '7d':
-        start_date = datetime.utcnow() - timedelta(days=7)
+        start_date = now_vn() - timedelta(days=7)
         query_tickets = query_tickets.filter(Ticket.created_at >= start_date)
         query_feedbacks = query_feedbacks.filter(Feedback.created_at >= start_date)
     elif time_range == '30d':
-        start_date = datetime.utcnow() - timedelta(days=30)
+        start_date = now_vn() - timedelta(days=30)
         query_tickets = query_tickets.filter(Ticket.created_at >= start_date)
         query_feedbacks = query_feedbacks.filter(Feedback.created_at >= start_date)
     elif time_range == '3m':
-        start_date = datetime.utcnow() - timedelta(days=90)
+        start_date = now_vn() - timedelta(days=90)
         query_tickets = query_tickets.filter(Ticket.created_at >= start_date)
         query_feedbacks = query_feedbacks.filter(Feedback.created_at >= start_date)
     elif time_range == '1y':
-        start_date = datetime.utcnow() - timedelta(days=365)
+        start_date = now_vn() - timedelta(days=365)
         query_tickets = query_tickets.filter(Ticket.created_at >= start_date)
         query_feedbacks = query_feedbacks.filter(Feedback.created_at >= start_date)
         

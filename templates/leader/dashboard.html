@@ -82,17 +82,7 @@
         </div>
     </div>
 
-    <div
-        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
-        <div>
-            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Ticket quá hạn</p>
-            <h3 id="stat-overdue" class="text-3xl font-bold text-red-600 dark:text-red-400">{{ overdue_tickets }}</h3>
-        </div>
-        <div
-            class="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-600 dark:text-red-400">
-            <span class="material-symbols-outlined">warning</span>
-        </div>
-    </div>
+    <!-- Overdue Ticket Card Removed -->
 
     <div
         class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
@@ -339,7 +329,7 @@
             // but for now Overdue is absolute (current time), not range based. Valid point.
             // But completion rate is based on range.
             document.getElementById('stat-rate').textContent = data.completion_rate + '%';
-            document.getElementById('stat-overdue').textContent = data.overdue_tickets;
+            // overdue removed
             document.getElementById('stat-least-busy').textContent = data.least_busy_staff;
             document.getElementById('stat-least-busy').title = data.least_busy_staff;
 

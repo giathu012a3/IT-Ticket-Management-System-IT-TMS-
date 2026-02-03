@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from sqlalchemy import or_
 from extensions import db
-from models import Ticket, User, Notification, TicketStatus
+from models import Ticket, User, Notification, TicketStatus, now_vn
 
 leader_bp = Blueprint('leader', __name__)
 
@@ -81,12 +81,9 @@ def leader_dashboard():
                 Ticket.updated_at < prev_end
             ).count()
             delta_resolved = resolved_tickets - prev_resolved
-        
-        # NEW: Overdue Tickets (Real-time snapshot, no history comparison possible easily)
-        overdue_tickets = Ticket.query.join(TicketStatus).filter(
-            ~TicketStatus.name.in_(['Resolved', 'Closed']),
-            Ticket.deadline < datetime.utcnow()
-        ).count()
+            
+        # Overdue tickets removed
+        overdue_tickets = 0
         
         # Staff Stats & Performance
         staff_members = User.query.filter_by(role='staff').all()
@@ -202,7 +199,7 @@ def leader_dashboard():
         raise e
 
 def get_date_ranges(time_range):
-    now = datetime.utcnow()
+    now = now_vn()
     
     cur_start = None
     cur_end = None
@@ -311,7 +308,7 @@ def assign_ticket(ticket_id):
     if staff_id:
         ticket.assigned_to_id = staff_id
         ticket.status = 'Assigned'
-        ticket.updated_at = datetime.utcnow()
+        ticket.updated_at = now_vn()
         db.session.commit()
         
         # Notify Staff
@@ -349,7 +346,7 @@ def reject_ticket(ticket_id):
         
     ticket.status = 'Rejected'
     ticket.rejection_reason = reason
-    ticket.updated_at = datetime.utcnow()
+    ticket.updated_at = now_vn()
     
     # Notify User
     n_user = Notification(user_id=ticket.creator_id, message=f"Yêu cầu của bạn đã bị từ chối: {reason}", link=url_for('user.view_ticket', ticket_id=ticket.id))

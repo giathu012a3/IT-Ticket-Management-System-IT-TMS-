@@ -1,6 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_login import UserMixin
 from extensions import db
+
+def now_vn():
+    return datetime.utcnow() + timedelta(hours=7)
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -18,6 +21,16 @@ class User(db.Model, UserMixin):
     def __repr__(self):
         return f'<User {self.username}>'
 
+    @property
+    def role_label(self):
+        roles = {
+            'user': 'Người dùng',
+            'leader': 'Quản lý',
+            'staff': 'Kỹ thuật viên',
+            'admin': 'Quản trị viên'
+        }
+        return roles.get(self.role, self.role)
+
 class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
@@ -25,9 +38,9 @@ class Ticket(db.Model):
     # status column removed, relying on status_id and relationship
     priority = db.Column(db.String(20), default='Medium')
     category = db.Column(db.String(50))
-    deadline = db.Column(db.DateTime) # New field for Quick Overview
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # deadline removed
+    created_at = db.Column(db.DateTime, default=now_vn)
+    updated_at = db.Column(db.DateTime, default=now_vn, onupdate=now_vn)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     assigned_to_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     rejection_reason = db.Column(db.Text)
@@ -68,7 +81,7 @@ class TicketStatus(db.Model):
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=now_vn)
     is_internal = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
@@ -78,7 +91,7 @@ class Feedback(db.Model):
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=now_vn)
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -86,4 +99,4 @@ class Notification(db.Model):
     message = db.Column(db.String(255), nullable=False)
     link = db.Column(db.String(255))
     is_read = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=now_vn)

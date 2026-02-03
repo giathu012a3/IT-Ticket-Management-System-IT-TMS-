@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from datetime import datetime
 from extensions import db
-from models import Ticket, User, Comment, Notification, Feedback, TicketStatus
+from models import Ticket, User, Comment, Notification, Feedback, TicketStatus, now_vn
 
 user_bp = Blueprint('user', __name__)
 
@@ -115,7 +115,7 @@ def add_comment(ticket_id):
         user_id=current_user.id
     )
     
-    ticket.updated_at = datetime.utcnow() # Update timestamp
+    ticket.updated_at = now_vn() # Update timestamp
     db.session.add(comment)
     
     # Notification Logic
@@ -147,7 +147,8 @@ def add_comment(ticket_id):
                 'author_initial': current_user.username[0].upper(),
                 'created_at': comment.created_at.strftime('%H:%M'),
                 'is_internal': comment.is_internal,
-                'user_id': current_user.id
+                'user_id': current_user.id,
+                'author_role': current_user.role_label
             }
         })
         
