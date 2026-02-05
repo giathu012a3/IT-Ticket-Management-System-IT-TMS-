@@ -1,140 +1,156 @@
 {% extends "base.html" %}
 
-{% block title %}Công việc của tôi - TicketSys{% endblock %}
+{% block title %}Bảng điều khiển - TicketSys{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex items-center justify-between">
-    <div>
-        <h2 class="text-2xl font-bold dark:text-white tracking-tight">Công việc của tôi</h2>
-        <p class="text-slate-500 dark:text-slate-400 text-sm">Thống kê và danh sách yêu cầu cần xử lý.</p>
-    </div>
-</div>
+<div class="space-y-8">
 
-<!-- Stats and Charts -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-    <!-- Key Metrics -->
-    <div class="space-y-6">
+    <!-- Section 1: Productivity Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Card 1: My Active Tickets -->
         <div
             class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
             <div>
-                <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Chờ xử lý</p>
-                <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ my_pending }}</h3>
+                <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Đang đảm nhiệm</p>
+                <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ my_active_tickets_count }}</h3>
+                <p class="text-xs text-slate-400 mt-1">Yêu cầu chưa hoàn thành</p>
             </div>
             <div
-                class="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                <span class="material-symbols-outlined">pending_actions</span>
+                class="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <span class="material-symbols-outlined">assignment_ind</span>
             </div>
         </div>
 
+        <!-- Card 2: Unread Messages -->
         <div
             class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
             <div>
-                <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Đã hoàn thành</p>
-                <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ my_resolved }}</h3>
+                <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Tin nhắn mới</p>
+                <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ unread_messages_count }}</h3>
+                <p class="text-xs text-slate-400 mt-1">Phản hồi từ khách hàng</p>
             </div>
             <div
-                class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                <span class="material-symbols-outlined">check_circle</span>
+                class="w-12 h-12 rounded-full bg-pink-50 dark:bg-pink-900/20 flex items-center justify-center text-pink-600 dark:text-pink-400">
+                <span class="material-symbols-outlined">notifications_active</span>
             </div>
         </div>
     </div>
 
-    <!-- Status Chart -->
-    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
-        <h3 class="text-sm font-bold dark:text-white mb-4">Trạng thái công việc</h3>
-        <div class="w-full h-48 relative">
-            <canvas id="statusChart"></canvas>
-        </div>
-    </div>
-</div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-<!-- Pending Tickets List -->
-<div
-    class="bg-white dark:bg-[#111418] border border-slate-200 dark:border-[#3b4754] rounded-xl overflow-hidden flex flex-col shadow-sm">
-    <div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-white/5">
-        <h3 class="font-bold dark:text-white flex items-center gap-2">
-            <span class="material-symbols-outlined text-primary">list</span>
-            Danh sách Yêu cầu cần xử lý
-        </h3>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-left">
-            <thead>
-                <tr
-                    class="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-[#9dabb9] text-xs font-bold uppercase tracking-wider">
-                    <th class="px-6 py-4">Trạng thái</th>
-                    <th class="px-6 py-4">Yêu cầu</th>
-                    <th class="px-6 py-4">Độ ưu tiên</th>
-                    <th class="px-6 py-4 text-right">Thao tác</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                {% for ticket in tickets %}
-                <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
-                    <td class="px-6 py-4">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider 
-                         {% if ticket.status == 'New' %} bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-500
-                         {% elif ticket.status == 'Assigned' %} bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-500
-                         {% elif ticket.status == 'In Progress' %} bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-500
-                         {% elif ticket.status == 'Waiting' %} bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-500
-                         {% else %} bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400 {% endif %}">
-                            {{ ticket.status }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="font-medium text-slate-900 dark:text-white">{{ ticket.title }}</div>
-                        <div class="text-xs text-slate-400 font-mono mt-0.5">#{{ ticket.id }}</div>
-                    </td>
-                    <td class="px-6 py-4">
-                        {% if ticket.priority == 'Critical' %}
-                        <span class="text-red-600 font-bold dark:text-red-500">Khẩn cấp</span>
-                        {% elif ticket.priority == 'High' %}
-                        <span class="text-orange-600 font-medium dark:text-orange-500">Cao</span>
-                        {% else %}
-                        <span class="text-slate-500 font-medium dark:text-slate-400">{{ ticket.priority }}</span>
+        <!-- Section 2: Task Queue (Priority Sorted) -->
+        <div
+            class="lg:col-span-2 bg-white dark:bg-[#111418] rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex flex-col">
+            <div class="p-4 border-b border-slate-200 dark:border-[#3b4754] flex items-center justify-between">
+                <h3 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">queue_music</span>
+                    Hàng đợi công việc
+                </h3>
+                <span class="text-xs font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                    Sắp xếp theo ưu tiên
+                </span>
+            </div>
+            <div class="overflow-x-auto flex-1">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 dark:bg-[#1c2128] text-xs uppercase font-bold text-slate-500">
+                        <tr>
+                            <th class="px-6 py-3">Prio</th>
+                            <th class="px-6 py-3">Yêu cầu</th>
+                            <th class="px-6 py-3">Trạng thái</th>
+                            <th class="px-6 py-3 text-right">Chi tiết</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-[#3b4754]">
+                        {% for ticket in task_queue %}
+                        <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                            <td class="px-6 py-4">
+                                {% if ticket.priority == 'Critical' %}
+                                <div class="flex items-center gap-1 text-red-600 font-bold dark:text-red-500">
+                                    <span class="material-symbols-outlined text-lg">error</span>
+                                </div>
+                                {% elif ticket.priority == 'High' %}
+                                <div class="flex items-center gap-1 text-orange-600 font-medium dark:text-orange-500">
+                                    <span class="material-symbols-outlined text-lg">arrow_upward</span>
+                                </div>
+                                {% elif ticket.priority == 'Medium' %}
+                                <div class="flex items-center gap-1 text-blue-600 font-medium dark:text-blue-500">
+                                    <span class="material-symbols-outlined text-lg">remove</span>
+                                </div>
+                                {% else %}
+                                <div class="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                                    <span class="material-symbols-outlined text-lg">arrow_downward</span>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-slate-900 dark:text-white line-clamp-1">{{ ticket.title }}
+                                </div>
+                                <div class="text-xs text-slate-400 font-mono mt-0.5">#{{ ticket.id }} • {{
+                                    ticket.updated_at.strftime('%H:%M %d/%m') }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span
+                                    class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider {{ ticket.status_color }}">
+                                    {{ ticket.status_label }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}"
+                                    class="text-primary hover:text-primary/80 font-bold text-xs uppercase">
+                                    Xử lý
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not task_queue %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-12 text-center text-slate-500">
+                                <span class="material-symbols-outlined text-4xl mb-2 text-slate-300">task_alt</span>
+                                <p>Bạn không có công việc nào đang chờ.</p>
+                            </td>
+                        </tr>
                         {% endif %}
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                        <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}"
-                            class="text-primary hover:underline text-xs font-bold">Xử lý</a>
-                    </td>
-                </tr>
-                {% endfor %}
-                {% if not tickets %}
-                <tr>
-                    <td colspan="4" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
-                        Không có yêu cầu nào cần xử lý.
-                    </td>
-                </tr>
-                {% endif %}
-            </tbody>
-        </table>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 3: Quick Chat (Recent Conversations) -->
+        <div
+            class="lg:col-span-1 bg-white dark:bg-[#111418] rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex flex-col">
+            <div class="p-4 border-b border-slate-200 dark:border-[#3b4754]">
+                <h3 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-indigo-500">forum</span>
+                    Hội thoại gần đây
+                </h3>
+            </div>
+            <div class="flex-1 overflow-y-auto max-h-[400px]">
+                <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for ticket in recent_conversations %}
+                    <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}"
+                        class="block p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-bold text-slate-500">#{{ ticket.id }}</span>
+                            <span class="text-[10px] text-slate-400">{{ ticket.updated_at.strftime('%H:%M') }}</span>
+                        </div>
+                        <h4 class="text-sm font-medium text-slate-900 dark:text-white line-clamp-1 mb-1">{{ ticket.title
+                            }}</h4>
+                        <div class="flex items-center gap-2 text-xs text-slate-500">
+                            <span
+                                class="w-2 h-2 rounded-full {{ 'bg-red-500' if ticket.priority == 'Critical' else 'bg-slate-300' }}"></span>
+                            {{ ticket.creator.full_name }}
+                        </div>
+                    </a>
+                    {% endfor %}
+                    {% if not recent_conversations %}
+                    <div class="p-8 text-center text-slate-500 text-sm">
+                        Chưa có cuộc hội thoại nào.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
+
 </div>
-
-<script>
-    const statusData = {{ status_counts | tojson }};
-
-    Chart.defaults.color = '#64748b';
-    Chart.defaults.font.family = 'Inter';
-
-    new Chart(document.getElementById('statusChart'), {
-        type: 'pie',
-        data: {
-            labels: Object.keys(statusData),
-            datasets: [{
-                data: Object.values(statusData),
-                backgroundColor: ['#3b82f6', '#6366f1', '#f59e0b', '#a855f7', '#10b981', '#64748b'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'right', labels: { usePointStyle: true } }
-            }
-        }
-    });
-</script>
 {% endblock %}

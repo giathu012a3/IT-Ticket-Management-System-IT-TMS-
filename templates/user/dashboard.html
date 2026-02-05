@@ -1,81 +1,142 @@
 {% extends "base.html" %}
 
-{% block title %}Yêu cầu của tôi - TicketSys{% endblock %}
+{% block title %}Bảng điều khiển - TicketSys{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex items-center justify-between">
-    <div>
-        <h2 class="text-2xl font-bold dark:text-white tracking-tight">Tổng quan Yêu cầu</h2>
-        <p class="text-slate-500 dark:text-slate-400 text-sm">Thống kê tình trạng các yêu cầu hỗ trợ của bạn.</p>
-    </div>
-    <div class="flex gap-3">
-        <a href="{{ url_for('user.user_tickets') }}"
-            class="bg-white dark:bg-[#283039] hover:bg-slate-50 dark:hover:bg-[#3b4754] text-slate-700 dark:text-white border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all">
-            <span class="material-symbols-outlined text-lg">list</span>
-            Danh sách
-        </a>
-        <a href="{{ url_for('user.create_ticket') }}"
-            class="bg-primary hover:bg-primary/90 text-white px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
-            <span class="material-symbols-outlined text-lg">add_circle</span>
-            Tạo mới
-        </a>
-    </div>
-</div>
+<div class="space-y-8">
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-    <!-- Summary Cards -->
-    <div class="space-y-6">
-        <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tổng số yêu cầu</h3>
-                <span class="material-symbols-outlined text-blue-500">confirmation_number</span>
+    <!-- Section 1: Quick Status Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Card 1: Active Tickets -->
+        <div
+            class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Đang mở</p>
+                <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ active_tickets_count }}</h3>
+                <p class="text-xs text-slate-400 mt-1">Yêu cầu đang chờ xử lý</p>
             </div>
-            <p class="text-4xl font-bold text-slate-900 dark:text-white">{{ total_tickets }}</p>
-        </div>
-
-        <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Đang xử lý</h3>
-                <span class="material-symbols-outlined text-amber-500">pending</span>
+            <div
+                class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                <span class="material-symbols-outlined">pending_actions</span>
             </div>
-            {% set active_count = total_tickets - status_counts.get('Resolved', 0) - status_counts.get('Closed', 0) %}
-            <p class="text-4xl font-bold text-slate-900 dark:text-white">{{ active_count }}</p>
-            <p class="text-xs text-slate-400 mt-1">Yêu cầu chưa hoàn thành</p>
+        </div>
+
+        <!-- Card 2: Pending Response -->
+        <div
+            class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Cần phản hồi</p>
+                <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ pending_response_count }}</h3>
+                <p class="text-xs text-slate-400 mt-1">Tin nhắn mới từ nhân viên</p>
+            </div>
+            <div
+                class="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <span class="material-symbols-outlined">mark_chat_unread</span>
+            </div>
         </div>
     </div>
 
-    <!-- Chart -->
-    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
-        <h3 class="text-sm font-bold dark:text-white mb-6">Trạng thái Yêu cầu</h3>
-        <div class="w-full h-64 relative">
-            <canvas id="statusChart"></canvas>
+    <!-- Section 2: Quick Action & Needs Rating -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- "Create New" Call to Action -->
+        <div
+            class="lg:col-span-1 bg-gradient-to-br from-primary to-blue-600 rounded-xl p-6 text-white shadow-lg shadow-primary/30 flex flex-col justify-between">
+            <div>
+                <h3 class="text-xl font-bold mb-2">Cần hỗ trợ ngay?</h3>
+                <p class="text-blue-100 text-sm mb-6">Tạo yêu cầu mới để nhận được sự giúp đỡ từ đội ngũ kỹ thuật.</p>
+            </div>
+            <a href="{{ url_for('user.create_ticket') }}"
+                class="bg-white text-primary font-bold py-3 px-4 rounded-lg text-center hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">add_circle</span>
+                Tạo Ticket Mới
+            </a>
+        </div>
+
+        <!-- Needs Rating List -->
+        <div
+            class="lg:col-span-2 bg-white dark:bg-[#111418] rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm p-6">
+            <h3 class="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-amber-500">star</span>
+                Cần đánh giá
+            </h3>
+
+            {% if tickets_needing_rating %}
+            <div class="space-y-3">
+                {% for ticket in tickets_needing_rating %}
+                <div
+                    class="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-mono font-bold text-slate-400">#{{ ticket.id }}</span>
+                        <div class="flex flex-col">
+                            <span class="text-sm font-medium text-slate-800 dark:text-slate-200 line-clamp-1">{{
+                                ticket.title }}</span>
+                            <span class="text-[10px] text-slate-500">Giải quyết lúc: {{
+                                ticket.updated_at.strftime('%H:%M %d/%m') }}</span>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('user.ticket_feedback', ticket_id=ticket.id) }}"
+                        class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                        Đánh giá ngay
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-slate-500 text-sm">
+                <p>Không có yêu cầu nào cần đánh giá.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
+
+    <!-- Section 3: My Recent Tickets -->
+    <div
+        class="bg-white dark:bg-[#111418] rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-200 dark:border-[#3b4754] flex items-center justify-between">
+            <h3 class="font-bold text-slate-900 dark:text-white">Vé của tôi (Gần đây)</h3>
+            <a href="{{ url_for('user.user_tickets') }}" class="text-sm font-bold text-primary hover:underline">Xem tất
+                cả</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                <thead class="bg-slate-50 dark:bg-[#1c2128] text-xs uppercase font-bold text-slate-500">
+                    <tr>
+                        <th class="px-6 py-3">ID</th>
+                        <th class="px-6 py-3">Tiêu đề</th>
+                        <th class="px-6 py-3">Trạng thái</th>
+                        <th class="px-6 py-3">Cập nhật cuối</th>
+                        <th class="px-6 py-3 text-right">Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-[#3b4754]">
+                    {% for ticket in recent_tickets %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                        <td class="px-6 py-4 font-mono text-xs">#{{ ticket.id }}</td>
+                        <td class="px-6 py-4 font-medium text-slate-900 dark:text-white">{{ ticket.title }}</td>
+                        <td class="px-6 py-4">
+                            <span
+                                class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider {{ ticket.status_color }}">
+                                {{ ticket.status_label }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-xs">{{ ticket.updated_at.strftime('%H:%M %d/%m/%Y') }}</td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}"
+                                class="text-primary hover:text-primary/80">
+                                <span class="material-symbols-outlined">arrow_forward</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if not recent_tickets %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-slate-500">Bạn chưa tạo yêu cầu nào.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
-
-<script>
-    const statusData = {{ status_counts | tojson }};
-
-    Chart.defaults.color = '#64748b';
-    Chart.defaults.font.family = 'Inter';
-
-    new Chart(document.getElementById('statusChart'), {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(statusData),
-            datasets: [{
-                data: Object.values(statusData),
-                backgroundColor: ['#3b82f6', '#6366f1', '#f59e0b', '#a855f7', '#10b981', '#64748b'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'right', labels: { usePointStyle: true } }
-            }
-        }
-    });
-</script>
 {% endblock %}

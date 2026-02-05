@@ -12,28 +12,39 @@ def staff_dashboard():
     if current_user.role != 'staff':
         return redirect(url_for('main.index'))
         
-    # Only fetch active tickets for the main board, sorted by recent update
-    tickets = Ticket.query.join(TicketStatus).filter(
+    # 1. My Active Tickets Count
+    my_active_tickets_count = Ticket.query.join(TicketStatus).filter(
         Ticket.assigned_to_id == current_user.id,
         TicketStatus.name.in_(['Assigned', 'In Progress', 'Waiting'])
-    ).order_by(Ticket.updated_at.desc()).all()
+    ).count()
+
+    # 2. Unread Messages Count (Notifications specific to tickets)
+    unread_messages_count = Notification.query.filter_by(
+        user_id=current_user.id, is_read=False
+    ).count()
+
+    # 3. Task Queue (Prioritized)
+    # Custom sort order: Critical (0), High (1), Medium (2), Low (3)
+    # SQL Order By Case...
+    # For simplicitly, fetch all active and sort in python
+    task_queue = Ticket.query.join(TicketStatus).filter(
+        Ticket.assigned_to_id == current_user.id,
+        TicketStatus.name.in_(['Assigned', 'In Progress', 'Waiting'])
+    ).all()
     
-    # Staff personal stats
-    my_tickets = Ticket.query.filter_by(assigned_to_id=current_user.id).all()
-    my_resolved = len([t for t in my_tickets if t.status == 'Resolved'])
-    my_pending = len([t for t in my_tickets if t.status in ['Assigned', 'In Progress', 'Waiting']])
-    
-    # Chart Data
-    status_counts = {}
-    for t in my_tickets:
-        label = t.status_label
-        status_counts[label] = status_counts.get(label, 0) + 1
-        
+    priority_map = {'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3}
+    task_queue.sort(key=lambda x: priority_map.get(x.priority, 4))
+
+    # 4. Recent Conversations (Tickets recently updated)
+    recent_conversations = Ticket.query.filter(
+        Ticket.assigned_to_id == current_user.id
+    ).order_by(Ticket.updated_at.desc()).limit(5).all()
+
     return render_template('staff/dashboard.html', 
-                         tickets=tickets,
-                         my_resolved=my_resolved,
-                         my_pending=my_pending,
-                         status_counts=status_counts)
+                         my_active_tickets_count=my_active_tickets_count,
+                         unread_messages_count=unread_messages_count,
+                         task_queue=task_queue,
+                         recent_conversations=recent_conversations)
 
 @staff_bp.route('/ticket/<int:ticket_id>/update_status', methods=['POST'])
 @login_required

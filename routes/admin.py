@@ -40,6 +40,20 @@ def admin_dashboard():
     tickets = query_tickets.all()
     feedbacks = query_feedbacks.all()
     
+    from models import SystemLog
+    
+    # User Stats (Global, not filtered by time usually, or maybe "New Users" in time range)
+    total_users = User.query.count()
+    
+    # New Users (in selected range)
+    new_users_query = User.query
+    if time_range != 'all' and 'start_date' in locals():
+         new_users_query = new_users_query.filter(User.created_at >= start_date)
+    new_users_count = new_users_query.count()
+
+    # System Logs (Recent 10)
+    system_logs = SystemLog.query.order_by(SystemLog.created_at.desc()).limit(10).all()
+    
     # Stats
     total_tickets = len(tickets)
     avg_rating = 0
@@ -61,7 +75,8 @@ def admin_dashboard():
     # 3. User Role Distribution
     role_counts = {}
     for u in users:
-        role_counts[u.role] = role_counts.get(u.role, 0) + 1
+        label = u.role_label if hasattr(u, 'role_label') else u.role
+        role_counts[label] = role_counts.get(label, 0) + 1
         
     # --- LEADER STATS MERGED ---
     # 4. Tickets by Category
@@ -84,12 +99,13 @@ def admin_dashboard():
     return render_template('admin/dashboard.html', 
                          total_tickets=total_tickets,
                          avg_rating=round(avg_rating, 1),
-                         total_users=len(users),
+                         total_users=total_users,
+                         new_users_count=new_users_count,
+                         system_logs=system_logs,
                          status_counts=status_counts,
                          priority_counts=priority_counts,
                          role_counts=role_counts,
                          current_range=time_range,
-                         # New Stats
                          category_counts=category_counts,
                          staff_performance=staff_performance,
                          resolved_tickets=resolved_tickets,

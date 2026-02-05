@@ -12,16 +12,42 @@ def user_dashboard():
     if current_user.role not in ['user']: # Simple RBAC check
          return redirect(url_for('main.index'))
          
-    # Chart Data
-    tickets = Ticket.query.filter_by(creator_id=current_user.id).all()
-    status_counts = {}
-    for t in tickets:
-        label = t.status_label
-        status_counts[label] = status_counts.get(label, 0) + 1
-        
+    # 1. Active Tickets (Not Resolved/Closed/Rejected)
+    active_tickets_count = Ticket.query.join(TicketStatus).filter(
+        Ticket.creator_id == current_user.id,
+        ~TicketStatus.name.in_(['Resolved', 'Closed', 'Rejected'])
+    ).count()
+
+    # 2. Pending Response (Simple version: Unread Status Updates or Comments from Staff)
+    # For now, let's look at recent updated Active tickets. 
+    # Or count unread notifications related to tickets.
+    # Let's count unread "Comment" or "Status" notifications
+    pending_response_count = Notification.query.filter_by(
+        user_id=current_user.id, is_read=False
+    ).filter(Notification.message.ilike('%phản hồi%')).count()
+
+    # 3. Recent Tickets (Top 5)
+    recent_tickets = Ticket.query.filter_by(creator_id=current_user.id).order_by(Ticket.updated_at.desc()).limit(5).all()
+
+    # 4. Needs Rating (Resolved but no Feedback)
+    # Feedback uselist=False in Ticket model, so ticket.feedback is single object or None
+    # We query tickets that are 'Resolved' and join Feedback to check for null
+    # Note: Outer Join needed? Or just check if feedback is missing.
+    # SQL: Select * from Ticket where status='Resolved' and id not in (select ticket_id from feedback)
+    
+    # Using python list for simplicity on small dataset, or left outer join
+    resolved_tickets = Ticket.query.join(TicketStatus).filter(
+        Ticket.creator_id == current_user.id,
+        TicketStatus.name == 'Resolved'
+    ).all()
+    
+    tickets_needing_rating = [t for t in resolved_tickets if not t.feedback]
+
     return render_template('user/dashboard.html', 
-                         total_tickets=len(tickets),
-                         status_counts=status_counts)
+                         active_tickets_count=active_tickets_count,
+                         pending_response_count=pending_response_count,
+                         recent_tickets=recent_tickets,
+                         tickets_needing_rating=tickets_needing_rating)
 
 @user_bp.route('/my-tickets')
 @login_required

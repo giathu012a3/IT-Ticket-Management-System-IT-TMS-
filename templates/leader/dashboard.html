@@ -23,34 +23,68 @@
     </div>
 </div>
 
-<!-- Key Metrics -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-    <div
-        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
-        <div>
-            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Tổng Ticket</p>
-            <div class="flex items-baseline gap-2">
-                <h3 id="stat-total" class="text-3xl font-bold text-slate-900 dark:text-white">{{ total_tickets }}</h3>
-                {% if delta_total is defined and delta_total != 0 %}
-                <span id="delta-total"
-                    class="text-xs font-bold {% if delta_total > 0 %}text-emerald-600{% else %}text-red-500{% endif %}">
-                    {% if delta_total > 0 %}▲{% else %}▼{% endif %} {{ delta_total | abs }}
-                </span>
-                {% else %}
-                <span id="delta-total" class="hidden text-xs font-bold"></span>
-                {% endif %}
-            </div>
+<!-- SLA Alerts -->
+{% if sla_warnings %}
+<div
+    class="mb-8 p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+    <span class="material-symbols-outlined text-red-600 dark:text-red-400">warning</span>
+    <div class="flex-1">
+        <h3 class="text-sm font-bold text-red-800 dark:text-red-400">Cảnh báo vi phạm SLA</h3>
+        <p class="text-xs text-red-600 dark:text-red-300 mt-1">Có {{ sla_warnings|length }} yêu cầu chưa được xử lý đúng
+            hạn (Mới > 24h hoặc Đang xử lý > 48h).</p>
+        <div class="mt-3 flex flex-wrap gap-2">
+            {% for ticket in sla_warnings[:5] %}
+            <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}"
+                class="inline-flex items-center gap-1 bg-white dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded px-2 py-1 text-xs font-medium text-red-700 dark:text-red-300 hover:bg-red-50 transition-colors">
+                #{{ ticket.id }}
+                <span class="text-[10px] opacity-75">({{ ticket.status_label }})</span>
+            </a>
+            {% endfor %}
+            {% if sla_warnings|length > 5 %}
+            <span class="text-xs text-red-600 self-center pl-1">+{{ sla_warnings|length - 5 }} yêu cầu khác</span>
+            {% endif %}
         </div>
-        <div
-            class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
-            <span class="material-symbols-outlined">confirmation_number</span>
+    </div>
+</div>
+{% endif %}
+
+<!-- Key Metrics Distribution -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <!-- Card 1: Waiting Assignment -->
+    <div
+        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex flex-col justify-between">
+        <div>
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Chờ phân công</p>
+            <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ waiting_assignment_count }}</h3>
+        </div>
+        <div class="mt-4 flex justify-between items-center">
+            <a href="{{ url_for('leader.assignment') }}" class="text-xs font-bold text-primary hover:underline">Phân
+                công ngay</a>
+            <span class="material-symbols-outlined text-slate-300">person_add</span>
         </div>
     </div>
 
+    <!-- Card 2: Assigned & Active -->
     <div
-        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
+        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex flex-col justify-between">
         <div>
-            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Đã giải quyết</p>
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Đang thực hiện</p>
+            <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ assigned_count }}</h3>
+        </div>
+        <div class="mt-4 flex justify-between items-center">
+            <span class="text-xs text-emerald-600 font-bold flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Active
+            </span>
+            <span class="material-symbols-outlined text-emerald-200 dark:text-emerald-900/40">engineering</span>
+        </div>
+    </div>
+
+    <!-- Card 3: Resolved (Filtered) -->
+    <div
+        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex flex-col justify-between">
+        <div>
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Hoàn thành (Kỳ này)</p>
             <div class="flex items-baseline gap-2">
                 <h3 id="stat-resolved" class="text-3xl font-bold text-slate-900 dark:text-white">{{ resolved_tickets }}
                 </h3>
@@ -59,119 +93,53 @@
                     class="text-xs font-bold {% if delta_resolved > 0 %}text-emerald-600{% else %}text-red-500{% endif %}">
                     {% if delta_resolved > 0 %}▲{% else %}▼{% endif %} {{ delta_resolved | abs }}
                 </span>
-                {% else %}
-                <span id="delta-resolved" class="hidden text-xs font-bold"></span>
                 {% endif %}
             </div>
         </div>
-        <div
-            class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-            <span class="material-symbols-outlined">check_circle</span>
+        <div class="mt-4 flex justify-end">
+            <span class="material-symbols-outlined text-indigo-200 dark:text-indigo-900/40">task_alt</span>
         </div>
     </div>
 
+    <!-- Card 4: Total Volume -->
     <div
-        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
+        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex flex-col justify-between">
         <div>
-            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Tỷ lệ hoàn thành</p>
-            <h3 id="stat-rate" class="text-3xl font-bold text-slate-900 dark:text-white">{{ completion_rate }}%</h3>
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Tổng tiếp nhận</p>
+            <div class="flex items-baseline gap-2">
+                <h3 id="stat-total" class="text-3xl font-bold text-slate-900 dark:text-white">{{ total_tickets }}</h3>
+                {% if delta_total is defined and delta_total != 0 %}
+                <span id="delta-total"
+                    class="text-xs font-bold {% if delta_total > 0 %}text-emerald-600{% else %}text-red-500{% endif %}">
+                    {% if delta_total > 0 %}▲{% else %}▼{% endif %} {{ delta_total | abs }}
+                </span>
+                {% endif %}
+            </div>
         </div>
-        <div
-            class="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
-            <span class="material-symbols-outlined">pie_chart</span>
-        </div>
-    </div>
-
-    <!-- Overdue Ticket Card Removed -->
-
-    <div
-        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex items-center justify-between">
-        <div>
-            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Staff rảnh nhất</p>
-            <h3 id="stat-least-busy" class="text-xl font-bold text-slate-900 dark:text-white truncate max-w-[150px]"
-                title="{{ least_busy_staff }}">{{ least_busy_staff }}</h3>
-        </div>
-        <div
-            class="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
-            <span class="material-symbols-outlined">person_off</span>
+        <div class="mt-4 flex justify-end">
+            <span class="material-symbols-outlined text-blue-200 dark:text-blue-900/40">inbox</span>
         </div>
     </div>
 </div>
 
-<!-- Staff Performance Table -->
-<div
-    class="bg-white dark:bg-[#111418] rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm mb-8 overflow-hidden">
-    <div class="p-6 border-b border-slate-200 dark:border-[#3b4754]">
-        <h3 class="text-lg font-bold dark:text-white">Bảng Hiệu suất Staff</h3>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-            <thead class="bg-slate-50 dark:bg-[#1c2128] text-xs uppercase font-bold text-slate-500">
-                <tr>
-                    <th class="px-6 py-3">Staff Name</th>
-                    <th class="px-6 py-3 text-center">Active Tickets (In Progress)</th>
-                    <th class="px-6 py-3 text-center">Resolved (Month)</th>
-                    <th class="px-6 py-3 w-1/3">Performance Bar</th>
-                </tr>
-            </thead>
-            <tbody id="staff-table-body" class="divide-y divide-slate-200 dark:divide-[#3b4754]">
-                {% for staff in staff_stats %}
-                <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                    <td class="px-6 py-4 font-medium text-slate-900 dark:text-white">{{ staff.name }}</td>
-                    <td class="px-6 py-4 text-center">
-                        <span
-                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                            {{ staff.active }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-center font-bold text-emerald-600 dark:text-emerald-400">{{
-                        staff.resolved_month }}</td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold w-8 text-right">{{ staff.performance }}%</span>
-                            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
-                                <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
-                                    style="width: {{ staff.performance }}%"></div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Charts -->
+<!-- Charts Split -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
     <!-- Workload Distribution Chart (Stacked) -->
-    <div
-        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm lg:col-span-2">
-        <h3 class="text-lg font-bold dark:text-white mb-6">Phân bổ Công việc (Workload Distribution)</h3>
+    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
+        <h3 class="text-lg font-bold dark:text-white mb-6">Hiệu suất Nhân viên (Load vs Resolved)</h3>
         <div class="w-full h-80 relative">
             <canvas id="staffChart"></canvas>
-        </div>
-    </div>
-</div>
-
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-    <!-- Ticket Status Chart -->
-    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
-        <h3 class="text-sm font-bold dark:text-white mb-6">Trạng thái Yêu cầu</h3>
-        <div class="w-full h-72 relative">
-            <canvas id="statusChart"></canvas>
         </div>
     </div>
 
     <!-- Ticket Category Chart -->
     <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
-        <h3 class="text-sm font-bold dark:text-white mb-6">Yêu cầu theo Danh mục</h3>
-        <div class="w-full h-72 relative">
+        <h3 class="text-lg font-bold dark:text-white mb-6">Phân loại Yêu cầu</h3>
+        <div class="w-full h-80 relative">
             <canvas id="categoryChart"></canvas>
         </div>
     </div>
 </div>
-
 
 <script id="status-data" type="text/plain">
     {{ status_counts | tojson }}
@@ -191,41 +159,21 @@
 
 <script>
     // --- Data from Flask ---
-    const statusData = JSON.parse(document.getElementById('status-data').textContent);
-    const categoryData = JSON.parse(document.getElementById('category-data').textContent);
+    let statusData = JSON.parse(document.getElementById('status-data').textContent);
+    let categoryData = JSON.parse(document.getElementById('category-data').textContent);
 
-    const staffLabels = JSON.parse(document.getElementById('staff-labels').textContent);
-    const staffActive = JSON.parse(document.getElementById('staff-active').textContent);
-    const staffResolved = JSON.parse(document.getElementById('staff-resolved').textContent);
+    let staffLabels = JSON.parse(document.getElementById('staff-labels').textContent);
+    let staffActive = JSON.parse(document.getElementById('staff-active').textContent);
+    let staffResolved = JSON.parse(document.getElementById('staff-resolved').textContent);
 
     // --- Chart Configs ---
     Chart.defaults.color = '#64748b';
     Chart.defaults.font.family = 'Inter';
 
-    let statusChart, categoryChart, staffChart;
+    let categoryChart, staffChart;
 
     function initCharts() {
-        // 1. Status Chart
-        if (statusChart) statusChart.destroy();
-        statusChart = new Chart(document.getElementById('statusChart'), {
-            type: 'pie',
-            data: {
-                labels: Object.keys(statusData),
-                datasets: [{
-                    data: Object.values(statusData),
-                    backgroundColor: ['#3b82f6', '#6366f1', '#f59e0b', '#a855f7', '#10b981', '#64748b']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'right', labels: { usePointStyle: true } }
-                }
-            }
-        });
-
-        // 2. Category Chart
+        // 1. Category Chart
         if (categoryChart) categoryChart.destroy();
         categoryChart = new Chart(document.getElementById('categoryChart'), {
             type: 'doughnut',
@@ -233,7 +181,8 @@
                 labels: Object.keys(categoryData),
                 datasets: [{
                     data: Object.values(categoryData),
-                    backgroundColor: ['#ec4899', '#f43f5e', '#8b5cf6', '#06b6d4', '#14b8a6']
+                    backgroundColor: ['#ec4899', '#f43f5e', '#8b5cf6', '#06b6d4', '#14b8a6'],
+                    borderWidth: 0
                 }]
             },
             options: {
@@ -245,7 +194,7 @@
             }
         });
 
-        // 3. Workload Distribution Chart (Stacked Bar)
+        // 2. Workload Distribution Chart (Stacked Bar)
         if (staffChart) staffChart.destroy();
         staffChart = new Chart(document.getElementById('staffChart'), {
             type: 'bar',
@@ -257,14 +206,12 @@
                         data: staffResolved,
                         backgroundColor: '#10b981', // Green for Resolved
                         borderRadius: 4,
-                        // stack: 'Stack 0',
                     },
                     {
                         label: 'Đang xử lý',
                         data: staffActive,
                         backgroundColor: '#f59e0b', // Yellow/Amber for In Progress
                         borderRadius: 4,
-                        // stack: 'Stack 0',
                     }
                 ]
             },
@@ -304,58 +251,45 @@
 
             // Update Stats
             document.getElementById('stat-total').textContent = data.total_tickets;
-            // Update Delta Total
+            // Update Delta Total logic...
+            // (Assuming delta elements exist and logic matches previous snippet)
             const deltaTotalEl = document.getElementById('delta-total');
-            if (data.delta_total !== undefined && data.delta_total !== 0) {
-                deltaTotalEl.classList.remove('hidden', 'text-emerald-600', 'text-red-500');
-                deltaTotalEl.classList.add(data.delta_total > 0 ? 'text-emerald-600' : 'text-red-500');
-                deltaTotalEl.textContent = (data.delta_total > 0 ? '▲ ' : '▼ ') + Math.abs(data.delta_total);
-            } else {
-                deltaTotalEl.classList.add('hidden');
+            if (deltaTotalEl) {
+                if (data.delta_total !== undefined && data.delta_total !== 0) {
+                    deltaTotalEl.classList.remove('hidden', 'text-emerald-600', 'text-red-500');
+                    deltaTotalEl.classList.add(data.delta_total > 0 ? 'text-emerald-600' : 'text-red-500');
+                    deltaTotalEl.textContent = (data.delta_total > 0 ? '▲ ' : '▼ ') + Math.abs(data.delta_total);
+                } else {
+                    deltaTotalEl.classList.add('hidden');
+                }
             }
 
             document.getElementById('stat-resolved').textContent = data.resolved_tickets;
             // Update Delta Resolved
             const deltaResolvedEl = document.getElementById('delta-resolved');
-            if (data.delta_resolved !== undefined && data.delta_resolved !== 0) {
-                deltaResolvedEl.classList.remove('hidden', 'text-emerald-600', 'text-red-500');
-                deltaResolvedEl.classList.add(data.delta_resolved > 0 ? 'text-emerald-600' : 'text-red-500');
-                deltaResolvedEl.textContent = (data.delta_resolved > 0 ? '▲ ' : '▼ ') + Math.abs(data.delta_resolved);
-            } else {
-                deltaResolvedEl.classList.add('hidden');
+            if (deltaResolvedEl) {
+                if (data.delta_resolved !== undefined && data.delta_resolved !== 0) {
+                    deltaResolvedEl.classList.remove('hidden', 'text-emerald-600', 'text-red-500');
+                    deltaResolvedEl.classList.add(data.delta_resolved > 0 ? 'text-emerald-600' : 'text-red-500');
+                    deltaResolvedEl.textContent = (data.delta_resolved > 0 ? '▲ ' : '▼ ') + Math.abs(data.delta_resolved);
+                } else {
+                    deltaResolvedEl.classList.add('hidden');
+                }
             }
 
-            // Resolved and Overdue logic might need adjustment if logic changes per time range, 
-            // but for now Overdue is absolute (current time), not range based. Valid point.
-            // But completion rate is based on range.
-            document.getElementById('stat-rate').textContent = data.completion_rate + '%';
-            // overdue removed
-            document.getElementById('stat-least-busy').textContent = data.least_busy_staff;
-            document.getElementById('stat-least-busy').title = data.least_busy_staff;
+            // Note: waiting_assignment and assigned_count in this design are NOT updated by time range filter because they are snapshots of "Now".
+            // Only metrics inside the "Current Range" logic (Total Created, Resolved in Period) change.
 
-            // Note: Staff Table is not dynamically updated via JS in this simple implementation yet, 
-            // or we need to rebuild the table rows.
-            // For now, let's just reload the charts. 
-            // Ideally we should empty tbody and rebuild it.
-            // But user didn't explicitly ask for full AJAX dynamic table update, just "Dashboard".
-            // The chart update is crucial.
-
-            // Re-render Charts
-            // Update Global Data Variables
-            statusData = data.status_counts;
+            // Reload Charts
             categoryData = data.category_counts;
-
-            // Update Staff Chart Data
             staffLabels = data.staff_labels;
             staffActive = data.staff_active;
             staffResolved = data.staff_resolved;
 
-            // Re-render Charts
             initCharts();
 
         } catch (error) {
             console.error('Error updating dashboard:', error);
-            // Alert removed as requested
         }
     }
 </script>

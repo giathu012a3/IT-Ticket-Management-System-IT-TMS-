@@ -35,19 +35,33 @@ def leader_dashboard():
         if cur_start:
             query = query.filter(Ticket.created_at >= cur_start, Ticket.created_at < cur_end)
             
-        all_tickets = query.all()
+        # 1. Waiting for Assignment vs Assigned (Overview)
+        waiting_assignment_count = Ticket.query.join(TicketStatus).filter(
+            TicketStatus.name == 'New',
+            Ticket.assigned_to_id == None
+        ).count()
+        
+        assigned_count = Ticket.query.join(TicketStatus).filter(
+            TicketStatus.name.in_(['Assigned', 'In Progress'])
+        ).count()
+        
+        # 2. SLA Warnings
+        # Logic: Status New > 24 hours OR Status In Progress > 48 hours
+        now = now_vn()
+        warning_time_new = now - timedelta(hours=24)
+        warning_time_progress = now - timedelta(hours=48)
+        
+        sla_warnings = Ticket.query.join(TicketStatus).filter(
+            or_(
+                (TicketStatus.name == 'New') & (Ticket.created_at < warning_time_new),
+                (TicketStatus.name == 'In Progress') & (Ticket.updated_at < warning_time_progress)
+            )
+        ).all()
         
         # Stats: Current
-        # Resolved in Current Range (Note: "Resolved" usually means status changed to resolved IN that period. 
-        # But for simplicity in this schema without history table, we often use updated_at or just status check on filtered tickets.
-        # If we filter by created_at, then "Resolved" means "Created AND Resolved in this period". 
-        # Usually Leader wants "Resolved in this period" regardless of creation.
-        # Let's adjust query for "Total" vs "Resolved".
-        
-        # RE-STRATEGY: 
-        # Total Tickets = Created in period
-        # Resolved Tickets = Resolved in period (updated_at)
-        
+        # Resolved in Current Range
+        # ... (Existing logic for stats below is fine, just cleaning up duplicates if any)
+
         # 1. Total Created (Current)
         total_query = Ticket.query
         if cur_start:
@@ -65,15 +79,13 @@ def leader_dashboard():
         
         completion_rate = int((resolved_tickets / total_tickets * 100)) if total_tickets > 0 else 0
 
-        # 3. Growth Calculation (Deltas)
+        # Delta Logic (Keep existing)
         delta_total = 0
         delta_resolved = 0
-        
         if prev_start:
-            # Prev Total
+             # Prev Total
             prev_total = Ticket.query.filter(Ticket.created_at >= prev_start, Ticket.created_at < prev_end).count()
             delta_total = total_tickets - prev_total
-            
             # Prev Resolved
             prev_resolved = Ticket.query.join(TicketStatus).filter(
                 TicketStatus.name.in_(['Resolved', 'Closed']),
@@ -81,23 +93,17 @@ def leader_dashboard():
                 Ticket.updated_at < prev_end
             ).count()
             delta_resolved = resolved_tickets - prev_resolved
-            
-        # Overdue tickets removed
-        overdue_tickets = 0
-        
+
         # Staff Stats & Performance
         staff_members = User.query.filter_by(role='staff').all()
         
         staff_stats = []
-        min_active = float('inf')
-        least_busy_staff = "N/A"
-        
         staff_chart_labels = []
         staff_chart_active = []
         staff_chart_resolved = []
         
         for staff in staff_members:
-            # Active (Real-time snapshot) - Always "Now"
+            # Active (Real-time snapshot)
             active_count = Ticket.query.join(TicketStatus).filter(
                 Ticket.assigned_to_id == staff.id,
                 TicketStatus.name == 'In Progress'
@@ -113,16 +119,14 @@ def leader_dashboard():
             
             resolved_count = r_query.count()
             
-            # Performance % (Resolved / (Active + Resolved)) - Hybrid metric
-            total_load = active_count + resolved_count
-            perf = int((resolved_count / total_load * 100)) if total_load > 0 else 0
+            # Performance % (Resolved - relative to peers? or simple count)
+            # Let's just store counts
             
             name = staff.full_name or staff.username
             staff_stats.append({
                 'name': name,
                 'active': active_count,
-                'resolved_month': resolved_count,
-                'performance': perf
+                'resolved_month': resolved_count
             })
             
             # For Chart
@@ -130,20 +134,24 @@ def leader_dashboard():
             staff_chart_active.append(active_count)
             staff_chart_resolved.append(resolved_count)
             
-            # Check least busy
-            if active_count < min_active:
-                min_active = active_count
-                least_busy_staff = name
 
         # Chart Data (Distribution)
-        # Tickets by Status (Current Range - Created based? Or Snapshot? Usually Snapshot for Status Chart)
-        # For Status Chart, it's usually "Current State of System". We don't filter by time usually, or we filter by Created Time?
-        # "Snapshot of tickets created in range" makes more sense for "This Month's Tickets Status".
-        
         chart_query = Ticket.query
         if cur_start:
             chart_query = chart_query.filter(Ticket.created_at >= cur_start, Ticket.created_at < cur_end)
         chart_tickets = chart_query.all()
+
+        # Calculate Least Busy Staff
+        least_busy_staff = "N/A"
+        min_active = float('inf')
+        for staff_data in staff_stats:
+             if staff_data['active'] < min_active:
+                 min_active = staff_data['active']
+                 least_busy_staff = staff_data['name']
+        
+        # Placeholder for overdue if used in JSON (though removed from template logic mostly, JSON requires it)
+        overdue_tickets = 0 # or logic to count overdue if needed, currently 0 to satisfy keys
+
         
         # 1. Tickets by Status
         status_counts = {}
@@ -180,7 +188,9 @@ def leader_dashboard():
                              resolved_tickets=resolved_tickets,
                              delta_resolved=delta_resolved,
                              completion_rate=completion_rate,
-                             overdue_tickets=overdue_tickets,
+                             waiting_assignment_count=waiting_assignment_count,
+                             assigned_count=assigned_count,
+                             sla_warnings=sla_warnings,
                              least_busy_staff=least_busy_staff,
                              staff_stats=staff_stats,
                              status_counts=status_counts,

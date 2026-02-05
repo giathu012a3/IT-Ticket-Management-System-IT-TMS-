@@ -1,78 +1,157 @@
 {% extends "base.html" %}
 
-{% block title %}Thống kê Hệ thống - TicketSys{% endblock %}
+{% block title %}Quản trị Hệ thống - TicketSys{% endblock %}
 
 {% block content %}
-<div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
+<div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-6">
     <div>
-        <h1 class="text-2xl font-bold dark:text-white tracking-tight">Thống kê Hệ thống</h1>
-        <p class="text-slate-500 dark:text-slate-400 text-sm">Tổng quan số liệu và hiệu suất hoạt động.</p>
+        <h1 class="text-2xl font-bold dark:text-white tracking-tight">Quản trị Hệ thống</h1>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Giám sát tài nguyên, người dùng và nhật ký hệ thống.</p>
     </div>
 
     <!-- Time Range Filter -->
     <div class="flex bg-white dark:bg-[#111418] border border-slate-200 dark:border-[#3b4754] rounded-lg p-1">
-        <a href="{{ url_for('admin.admin_dashboard', time_range='7d') }}"
-            class="px-3 py-1.5 text-xs font-bold rounded-md transition-all {{ 'bg-slate-100 text-slate-900 dark:bg-white/10 dark:text-white' if current_range == '7d' else 'text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
-            7 Ngày
+        {% for r in ['7d', '30d', '3m', '1y', 'all'] %}
+        <a href="{{ url_for('admin.admin_dashboard', time_range=r) }}"
+            class="px-3 py-1.5 text-xs font-bold rounded-md transition-all uppercase 
+            {{ 'bg-slate-100 text-slate-900 dark:bg-white/10 dark:text-white' if current_range == r or (not current_range and r == 'all') else 'text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
+            {{ r }}
         </a>
-        <a href="{{ url_for('admin.admin_dashboard', time_range='30d') }}"
-            class="px-3 py-1.5 text-xs font-bold rounded-md transition-all {{ 'bg-slate-100 text-slate-900 dark:bg-white/10 dark:text-white' if current_range == '30d' else 'text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
-            30 Ngày
-        </a>
-        <a href="{{ url_for('admin.admin_dashboard', time_range='3m') }}"
-            class="px-3 py-1.5 text-xs font-bold rounded-md transition-all {{ 'bg-slate-100 text-slate-900 dark:bg-white/10 dark:text-white' if current_range == '3m' else 'text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
-            1 Quý
-        </a>
-        <a href="{{ url_for('admin.admin_dashboard', time_range='1y') }}"
-            class="px-3 py-1.5 text-xs font-bold rounded-md transition-all {{ 'bg-slate-100 text-slate-900 dark:bg-white/10 dark:text-white' if current_range == '1y' else 'text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
-            1 Năm
-        </a>
-        <a href="{{ url_for('admin.admin_dashboard', time_range='all') }}"
-            class="px-3 py-1.5 text-xs font-bold rounded-md transition-all {{ 'bg-slate-100 text-slate-900 dark:bg-white/10 dark:text-white' if current_range == 'all' or not current_range else 'text-slate-500 hover:text-slate-900 dark:hover:text-white' }}">
-            Tất cả
-        </a>
+        {% endfor %}
     </div>
 </div>
 
-<!-- Stats Row -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tổng Yêu cầu</h3>
-            <span class="material-symbols-outlined text-blue-500">confirmation_number</span>
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <!-- Card 1: Total Users -->
+    <div
+        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex flex-col justify-between">
+        <div>
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Người dùng</p>
+            <div class="flex items-baseline gap-2">
+                <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ total_users }}</h3>
+                <span
+                    class="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">
+                    +{{ new_users_count }} mới
+                </span>
+            </div>
         </div>
-        <p class="text-3xl font-bold text-slate-900 dark:text-white">{{ total_tickets }}</p>
-        <p class="text-xs text-slate-400 mt-1">Toàn bộ thời gian</p>
+        <div class="mt-4 flex justify-between items-center">
+            <a href="{{ url_for('admin.admin_users') }}" class="text-xs font-bold text-primary hover:underline">Quản
+                lý</a>
+            <span class="material-symbols-outlined text-purple-200 dark:text-purple-900/40">group</span>
+        </div>
     </div>
 
-    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Đánh giá TB</h3>
-            <span class="material-symbols-outlined text-amber-500">star</span>
+    <!-- Card 2: Total Tickets -->
+    <div
+        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex flex-col justify-between">
+        <div>
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Tổng Yêu cầu</p>
+            <h3 class="text-3xl font-bold text-slate-900 dark:text-white">{{ total_tickets }}</h3>
         </div>
-        <p class="text-3xl font-bold text-slate-900 dark:text-white">{{ avg_rating }}</p>
-        <div class="flex text-amber-400 mt-1 text-xs">
-            Trên 5 sao
+        <div class="mt-4 flex justify-between items-center">
+            <span class="text-xs text-slate-400 font-medium">Trong kỳ này</span>
+            <span class="material-symbols-outlined text-blue-200 dark:text-blue-900/40">confirmation_number</span>
         </div>
     </div>
 
-    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tổng Người dùng</h3>
-            <span class="material-symbols-outlined text-primary">group</span>
+    <!-- Card 3: Completion Rate -->
+    <div
+        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex flex-col justify-between">
+        <div>
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Tỷ lệ hoàn thành</p>
+            <h3 class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{{ completion_rate }}%</h3>
         </div>
-        <p class="text-3xl font-bold text-slate-900 dark:text-white">{{ total_users }}</p>
-        <div class="text-xs text-slate-400 mt-1">Tài khoản trong hệ thống</div>
+        <div class="mt-4 flex justify-between items-center">
+            <span class="text-xs text-slate-400 font-medium">{{ resolved_tickets }} đã xong</span>
+            <span class="material-symbols-outlined text-emerald-200 dark:text-emerald-900/40">check_circle</span>
+        </div>
     </div>
 
-    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Sự cố chưa xong</h3>
-            <span class="material-symbols-outlined text-red-500">warning</span>
+    <!-- Card 4: Avg Rating -->
+    <div
+        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex flex-col justify-between">
+        <div>
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Đánh giá TB</p>
+            <h3 class="text-3xl font-bold text-amber-500">{{ avg_rating }}</h3>
         </div>
-        {% set pending_count = total_tickets - status_counts.get('Resolved', 0) - status_counts.get('Closed', 0) %}
-        <p class="text-3xl font-bold text-slate-900 dark:text-white">{{ pending_count }}</p>
-        <p class="text-xs text-slate-400 mt-1">Cần xử lý</p>
+        <div class="mt-4 flex justify-between items-center">
+            <div class="flex text-amber-400 text-xs">
+                {% for i in range(5) %}
+                <span class="material-symbols-outlined text-[16px]">{{ 'star' if i < avg_rating else 'star_outline'
+                        }}</span>
+                        {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 h-full">
+    <!-- Left Column: System Logs -->
+    <div
+        class="lg:col-span-2 bg-white dark:bg-[#111418] rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex flex-col">
+        <div class="p-6 border-b border-slate-200 dark:border-[#3b4754] flex items-center justify-between">
+            <h3 class="text-lg font-bold dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-slate-400">dvr</span>
+                Nhật ký Hệ thống (Gần đây)
+            </h3>
+            <button class="text-xs font-bold text-primary hover:underline">Xem tất cả</button>
+        </div>
+        <div class="overflow-x-auto flex-1">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 dark:bg-[#1c2128] text-xs uppercase font-bold text-slate-500">
+                    <tr>
+                        <th class="px-6 py-3">Thời gian</th>
+                        <th class="px-6 py-3">Người dùng</th>
+                        <th class="px-6 py-3">Hành động</th>
+                        <th class="px-6 py-3">Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-[#3b4754]">
+                    {% for log in system_logs %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                        <td class="px-6 py-3 font-mono text-xs text-slate-400">{{ log.created_at.strftime('%Y-%m-%d
+                            %H:%M') }}</td>
+                        <td class="px-6 py-3 font-medium text-slate-900 dark:text-white">
+                            {% if log.user %}
+                            {{ log.user.username }}
+                            {% else %}
+                            Unknown
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
+                            {% if 'Login' in log.action %} bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300
+                            {% elif 'Create' in log.action %} bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300
+                            {% elif 'Delete' in log.action %} bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300
+                            {% else %} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 {% endif %}">
+                                {{ log.action }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-3 text-slate-500 dark:text-slate-400 truncate max-w-[200px]"
+                            title="{{ log.details }}">
+                            {{ log.details }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if not system_logs %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-slate-500">Chưa có nhật ký ghi lại.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Right Column: User Distribution -->
+    <div
+        class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm flex flex-col">
+        <h3 class="text-lg font-bold dark:text-white mb-6">Phân loại Người dùng</h3>
+        <div class="w-full h-64 relative">
+            <canvas id="userRoleDistributionChart"></canvas>
+        </div>
     </div>
 </div>
 
@@ -86,24 +165,6 @@
         </div>
     </div>
 
-    <!-- Ticket Priority Chart -->
-    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
-        <h3 class="text-sm font-bold dark:text-white mb-6">Mức độ Ưu tiên</h3>
-        <div class="w-full h-64 relative">
-            <canvas id="priorityChart"></canvas>
-        </div>
-    </div>
-</div>
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-    <!-- User Roles Chart -->
-    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
-        <h3 class="text-sm font-bold dark:text-white mb-6">Phân bổ Vai trò</h3>
-        <div class="w-full h-64 relative">
-            <canvas id="roleChart"></canvas>
-        </div>
-    </div>
-
     <!-- Ticket Category Chart (New) -->
     <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm">
         <h3 class="text-sm font-bold dark:text-white mb-6">Danh mục Yêu cầu</h3>
@@ -113,145 +174,82 @@
     </div>
 </div>
 
-<!-- Staff Performance Chart (New) -->
-<div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-slate-200 dark:border-[#3b4754] shadow-sm mb-8">
-    <h3 class="text-sm font-bold dark:text-white mb-6">Hiệu suất Kỹ thuật viên</h3>
-    <div class="w-full h-72 relative">
-        <canvas id="staffChart"></canvas>
-    </div>
-</div>
-
 <script id="status-data" type="application/json">{{ status_counts | tojson }}</script>
-<script id="priority-data" type="application/json">{{ priority_counts | tojson }}</script>
 <script id="role-data" type="application/json">{{ role_counts | tojson }}</script>
 <script id="category-data" type="application/json">{{ category_counts | tojson }}</script>
-<script id="staff-data" type="application/json">{{ staff_performance | tojson }}</script>
 
 <script>
     // --- Data from Flask ---
-    const statusData = JSON.parse(document.getElementById('status-data').textContent);
-    const priorityData = JSON.parse(document.getElementById('priority-data').textContent);
-    const roleData = JSON.parse(document.getElementById('role-data').textContent);
-    const categoryData = JSON.parse(document.getElementById('category-data').textContent);
-    const staffData = JSON.parse(document.getElementById('staff-data').textContent);
+    try {
+        const statusData = JSON.parse(document.getElementById('status-data').textContent);
+        const roleData = JSON.parse(document.getElementById('role-data').textContent);
+        const categoryData = JSON.parse(document.getElementById('category-data').textContent);
 
-    // --- Chart Configs ---
-    Chart.defaults.color = '#64748b';
-    Chart.defaults.font.family = 'Inter';
+        // --- Chart Configs ---
+        Chart.defaults.color = '#64748b';
+        Chart.defaults.font.family = 'Inter';
 
-    // 1. Status Chart
-    new Chart(document.getElementById('statusChart'), {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(statusData),
-            datasets: [{
-                data: Object.values(statusData),
-                backgroundColor: ['#3b82f6', '#6366f1', '#f59e0b', '#a855f7', '#10b981', '#64748b'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'right', labels: { usePointStyle: true } }
-            }
-        }
-    });
-
-    // 2. Priority Chart
-    const priorityOrder = ['Critical', 'High', 'Medium', 'Low'];
-    const sortedPriorityLabels = Object.keys(priorityData).sort((a, b) => priorityOrder.indexOf(a) - priorityOrder.indexOf(b));
-    const sortedPriorityData = sortedPriorityLabels.map(l => priorityData[l]);
-
-    new Chart(document.getElementById('priorityChart'), {
-        type: 'bar',
-        data: {
-            labels: sortedPriorityLabels,
-            datasets: [{
-                label: 'Số lượng',
-                data: sortedPriorityData,
-                backgroundColor: ['#dc2626', '#ea580c', '#3b82f6', '#94a3b8'],
-                borderRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
-                x: { grid: { display: false } }
+        // 1. Status Chart
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(statusData),
+                datasets: [{
+                    data: Object.values(statusData),
+                    backgroundColor: ['#3b82f6', '#6366f1', '#f59e0b', '#a855f7', '#10b981', '#64748b'],
+                    borderWidth: 0
+                }]
             },
-            plugins: {
-                legend: { display: false }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { usePointStyle: true } }
+                }
             }
-        }
-    });
+        });
 
-    // 3. Role Chart
-    new Chart(document.getElementById('roleChart'), {
-        type: 'pie',
-        data: {
-            labels: Object.keys(roleData),
-            datasets: [{
-                data: Object.values(roleData),
-                backgroundColor: ['#10b981', '#3b82f6', '#a855f7', '#64748b'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom', labels: { usePointStyle: true } }
-            }
-        }
-    });
-
-    // 4. Category Chart
-    new Chart(document.getElementById('categoryChart'), {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(categoryData),
-            datasets: [{
-                data: Object.values(categoryData),
-                backgroundColor: ['#ec4899', '#f43f5e', '#8b5cf6', '#06b6d4', '#14b8a6'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom', labels: { usePointStyle: true } }
-            }
-        }
-    });
-
-    // 5. Staff Chart
-    new Chart(document.getElementById('staffChart'), {
-        type: 'bar',
-        data: {
-            labels: Object.keys(staffData),
-            datasets: [{
-                label: 'Số lượng yêu cầu',
-                data: Object.values(staffData),
-                backgroundColor: '#3b82f6',
-                borderRadius: 4,
-                barThickness: 40
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
-                x: { grid: { display: false } }
+        // 2. Role Chart (Renamed ID)
+        new Chart(document.getElementById('userRoleDistributionChart'), {
+            type: 'pie',
+            data: {
+                labels: Object.keys(roleData),
+                datasets: [{
+                    data: Object.values(roleData),
+                    backgroundColor: ['#10b981', '#3b82f6', '#a855f7', '#64748b'],
+                    borderWidth: 0
+                }]
             },
-            plugins: {
-                legend: { display: false }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true } }
+                }
             }
-        }
-    });
+        });
+
+        // 3. Category Chart
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(categoryData),
+                datasets: [{
+                    data: Object.values(categoryData),
+                    backgroundColor: ['#ec4899', '#f43f5e', '#8b5cf6', '#06b6d4', '#14b8a6'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true } }
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Error initializing charts:", e);
+    }
 </script>
 {% endblock %}
