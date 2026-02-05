@@ -161,3 +161,23 @@ def toggle_user_status(user_id):
         
     db.session.commit()
     return redirect(url_for('admin.admin_users'))
+
+@admin_bp.route('/admin/users/update_password', methods=['POST'])
+@login_required
+def update_user_password():
+    if current_user.role != 'admin':
+        return redirect(url_for('main.index'))
+        
+    user_id = request.form.get('user_id')
+    new_password = request.form.get('password')
+    
+    if not user_id or not new_password:
+        flash('Thiếu thông tin cần thiết.')
+        return redirect(url_for('admin.admin_users'))
+        
+    user = User.query.get_or_404(user_id)
+    user.password = new_password
+    db.session.commit()
+    
+    flash(f'Đã cập nhật mật khẩu cho user {user.username}.')
+    return redirect(url_for('admin.admin_users'))

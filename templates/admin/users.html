@@ -86,6 +86,12 @@
                                 <div
                                     class="absolute right-0 top-6 w-48 bg-white dark:bg-[#1e2329] border border-slate-200 dark:border-[#3b4754] rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-right">
                                     <div class="py-1">
+                                        <button onclick="openPasswordModal('{{ user.id }}', '{{ user.username }}')"
+                                            class="w-full text-left flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                                            <span
+                                                class="material-symbols-outlined text-sm text-amber-500">lock_reset</span>
+                                            Đổi mật khẩu
+                                        </button>
                                         <a href="{{ url_for('admin.toggle_user_status', user_id=user.id) }}"
                                             class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                                             {% if user.status == 'inactive' %}
@@ -166,4 +172,67 @@
         </form>
     </div>
 </div>
+</div>
+
+<!-- Password Update Modal -->
+<div id="passwordModal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closePasswordModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md p-4">
+        <div
+            class="bg-white dark:bg-[#1e2329] rounded-xl shadow-2xl border border-slate-200 dark:border-[#3b4754] overflow-hidden">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <h3 class="font-bold dark:text-white">Đổi mật khẩu</h3>
+                <button onclick="closePasswordModal()"
+                    class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form action="{{ url_for('admin.update_user_password') }}" method="POST" class="p-4 space-y-4">
+                <input type="hidden" name="user_id" id="modalUserId">
+
+                <div>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                        Đang đổi mật khẩu cho tài khoản <span id="modalUsername"
+                            class="font-bold text-slate-800 dark:text-white"></span>
+                    </p>
+
+                    <label
+                        class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Mật
+                        khẩu mới</label>
+                    <div class="relative">
+                        <input type="text" name="password" required
+                            class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white text-sm focus:ring-primary focus:border-primary pl-10"
+                            placeholder="Nhập mật khẩu mới">
+                        <span
+                            class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">key</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closePasswordModal()"
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        Hủy
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95">
+                        Lưu thay đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openPasswordModal(userId, username) {
+        document.getElementById('passwordModal').classList.remove('hidden');
+        document.getElementById('modalUserId').value = userId;
+        document.getElementById('modalUsername').textContent = '@' + username;
+    }
+
+    function closePasswordModal() {
+        document.getElementById('passwordModal').classList.add('hidden');
+    }
+</script>
 {% endblock %}
