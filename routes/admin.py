@@ -117,8 +117,9 @@ def admin_users():
     if current_user.role != 'admin':
         return redirect(url_for('main.index'))
     
-    users = User.query.all()
-    return render_template('admin/users.html', users=users)
+    page = request.args.get('page', 1, type=int)
+    users_pagination = User.query.paginate(page=page, per_page=10, error_out=False)
+    return render_template('admin/users.html', users_pagination=users_pagination)
 
 @admin_bp.route('/admin/create_user', methods=['POST'])
 @login_required

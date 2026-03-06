@@ -64,9 +64,10 @@ def user_tickets():
     elif status_filter == 'completed':
         query = query.filter(TicketStatus.name.in_(['Resolved', 'Closed', 'Rejected']))
     
-    tickets = query.order_by(Ticket.updated_at.desc()).all()
+    page = request.args.get('page', 1, type=int)
+    tickets_pagination = query.order_by(Ticket.updated_at.desc()).paginate(page=page, per_page=10, error_out=False)
     
-    return render_template('user/tickets.html', tickets=tickets, current_filter=status_filter)
+    return render_template('user/tickets.html', tickets_pagination=tickets_pagination, current_filter=status_filter)
 
 @user_bp.route('/ticket/create', methods=['GET', 'POST'])
 @login_required

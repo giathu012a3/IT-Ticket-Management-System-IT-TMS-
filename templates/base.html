@@ -263,6 +263,83 @@
         } else {
             document.documentElement.classList.remove('dark')
         }
+
+        // AJAX Pagination & Navigation
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle link clicks
+            document.addEventListener('click', async (e) => {
+                const link = e.target.closest('a.ajax-link');
+                if (link && link.href && !link.href.startsWith('javascript:')) {
+                    const container = link.closest('.ajax-container') || document.querySelector('.ajax-container');
+                    if (container) {
+                        e.preventDefault();
+                        await fetchAndReplace(link.href, container);
+                    }
+                }
+            });
+
+            // Handle filter form submissions
+            document.addEventListener('submit', async (e) => {
+                const form = e.target.closest('form.ajax-form');
+                if (form) {
+                    e.preventDefault();
+                    const container = form.closest('.ajax-container') || document.querySelector('.ajax-container');
+                    if (container) {
+                        const url = new URL(form.action || window.location.href);
+                        const formData = new FormData(form);
+                        if (form.method.toLowerCase() === 'get') {
+                            for (const [key, value] of formData.entries()) {
+                                url.searchParams.set(key, value);
+                            }
+                            await fetchAndReplace(url.toString(), container);
+                        }
+                    }
+                }
+            });
+
+            async function fetchAndReplace(url, container) {
+                const originalOpacity = container.style.opacity;
+                container.style.opacity = '0.5';
+                container.style.pointerEvents = 'none';
+
+                try {
+                    const response = await fetch(url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+
+                    if (response.ok) {
+                        const html = await response.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+
+                        const containerId = container.id;
+                        if (containerId) {
+                            const newContainer = doc.getElementById(containerId);
+                            if (newContainer) {
+                                container.innerHTML = newContainer.innerHTML;
+                                window.history.pushState({}, '', url);
+                            } else {
+                                window.location.href = url;
+                            }
+                        } else {
+                            window.location.href = url;
+                        }
+                    } else {
+                        window.location.href = url;
+                    }
+                } catch (err) {
+                    console.error('AJAX fetch failed:', err);
+                    window.location.href = url;
+                } finally {
+                    container.style.opacity = originalOpacity;
+                    container.style.pointerEvents = 'auto';
+                }
+            }
+
+            window.addEventListener('popstate', () => {
+                window.location.reload();
+            });
+        });
     </script>
 </body>
 

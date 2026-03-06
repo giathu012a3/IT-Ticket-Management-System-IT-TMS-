@@ -262,15 +262,16 @@ def assignment():
     # Only fetch New or Unassigned tickets
     # Only fetch New or Unassigned tickets
     # Join TicketStatus to filter by name
-    new_tickets = Ticket.query.join(TicketStatus).filter(
+    page = request.args.get('page', 1, type=int)
+    new_tickets_pagination = Ticket.query.join(TicketStatus).filter(
         or_(TicketStatus.name == 'New', Ticket.assigned_to_id == None),
         ~TicketStatus.name.in_(['Resolved', 'Closed', 'Rejected'])
-    ).order_by(Ticket.created_at.desc()).all()
+    ).order_by(Ticket.created_at.desc()).paginate(page=page, per_page=10, error_out=False)
     
     staff_members = User.query.filter_by(role='staff').all()
     
     return render_template('leader/assignment.html', 
-                         new_tickets=new_tickets,
+                         new_tickets_pagination=new_tickets_pagination,
                          staff_members=staff_members)
 
 @leader_bp.route('/leader/tickets')
@@ -296,10 +297,16 @@ def all_tickets():
             Ticket.id.ilike(f'%{search}%')
         ))
         
-    tickets = query.order_by(Ticket.created_at.desc()).all()
+    page = request.args.get('page', 1, type=int)
+    tickets_pagination = query.order_by(Ticket.created_at.desc()).paginate(page=page, per_page=10, error_out=False)
     statuses = TicketStatus.query.all()
     
-    return render_template('leader/all_tickets.html', tickets=tickets, statuses=statuses)
+    return render_template('leader/all_tickets.html', 
+                          tickets_pagination=tickets_pagination, 
+                          statuses=statuses,
+                          current_status=status,
+                          current_priority=priority,
+                          current_search=search)
 
 @leader_bp.route('/assign_ticket/<int:ticket_id>', methods=['POST'])
 @login_required

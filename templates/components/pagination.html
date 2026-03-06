@@ -1,0 +1,75 @@
+{% macro render_pagination(pagination, endpoint) %}
+<div class="mt-6 flex flex-col items-center justify-between gap-4 py-4 sm:flex-row">
+    <!-- Current Status -->
+    <div class="text-sm text-slate-500 dark:text-slate-400">
+        Hiển thị <span class="font-medium text-slate-900 dark:text-white">{{ (pagination.page - 1) * pagination.per_page
+            + 1 }}</span>
+        đến
+        <span class="font-medium text-slate-900 dark:text-white">
+            {% if pagination.page * pagination.per_page > pagination.total %}
+            {{ pagination.total }}
+            {% else %}
+            {{ pagination.page * pagination.per_page }}
+            {% endif %}
+        </span>
+        trong số <span class="font-medium text-slate-900 dark:text-white">{{ pagination.total }}</span> kết quả
+    </div>
+
+    <!-- Pagination Controls -->
+    <nav class="flex items-center gap-1" aria-label="Pagination">
+        <!-- Previous Page -->
+        {% if pagination.has_prev %}
+        <a href="{{ url_for(endpoint, page=pagination.prev_num, **kwargs) }}"
+            class="ajax-link inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-[#111418] dark:text-slate-400 dark:hover:bg-[#283039] dark:hover:text-white">
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+        </a>
+        {% else %}
+        <span
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400 opacity-50 dark:border-slate-800 dark:bg-[#111418]/50 dark:text-slate-600">
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+        </span>
+        {% endif %}
+
+        <!-- Page Numbers -->
+        <div class="flex items-center gap-1 hidden sm:flex">
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+            {% if page_num == pagination.page %}
+            <span aria-current="page"
+                class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-white">
+                {{ page_num }}
+            </span>
+            {% else %}
+            <a href="{{ url_for(endpoint, page=page_num, **kwargs) }}"
+                class="ajax-link inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-[#111418] dark:text-slate-400 dark:hover:bg-[#283039] dark:hover:text-white">
+                {{ page_num }}
+            </a>
+            {% endif %}
+            {% else %}
+            <span
+                class="inline-flex h-9 w-9 items-center justify-center text-sm font-medium text-slate-400 dark:text-slate-600">...</span>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Mobile Current Page (shown only on small screens) -->
+        <span
+            class="inline-flex h-9 px-3 items-center justify-center rounded-lg bg-slate-100 text-sm font-semibold text-slate-900 dark:bg-[#283039] dark:text-white sm:hidden">
+            Trang {{ pagination.page }} / {{ pagination.pages }}
+        </span>
+
+        <!-- Next Page -->
+        {% if pagination.has_next %}
+        <a href="{{ url_for(endpoint, page=pagination.next_num, **kwargs) }}"
+            class="ajax-link inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-[#111418] dark:text-slate-400 dark:hover:bg-[#283039] dark:hover:text-white">
+            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+        </a>
+        {% else %}
+        <span
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400 opacity-50 dark:border-slate-800 dark:bg-[#111418]/50 dark:text-slate-600">
+            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+        </span>
+        {% endif %}
+    </nav>
+</div>
+{% endmacro %}
