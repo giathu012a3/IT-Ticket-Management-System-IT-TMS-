@@ -18,7 +18,7 @@
                 trợ tốt nhất.</p>
         </div>
 
-        <form method="POST" class="p-8 space-y-8">
+        <form method="POST" enctype="multipart/form-data" class="p-8 space-y-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="col-span-2">
                     <label
@@ -27,6 +27,14 @@
                     <input type="text" name="title" required
                         class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#283039] focus:border-primary focus:ring-primary transition-colors py-2.5 px-4"
                         placeholder="Ví dụ: Không thể truy cập VPN">
+                </div>
+
+                <div class="col-span-2">
+                    <label
+                        class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Phòng ban / Vị trí</label>
+                    <input type="text" name="department" required value="{{ current_user.department or '' }}"
+                        class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#283039] focus:border-primary focus:ring-primary transition-colors py-2.5 px-4"
+                        placeholder="Ví dụ: Phòng Kế toán - Tầng 3">
                 </div>
 
                 <div>
@@ -87,6 +95,13 @@
                     <textarea name="description" rows="5" required
                         class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#283039] focus:border-primary focus:ring-primary transition-colors p-4 block"
                         placeholder="Vui lòng mô tả vấn đề của bạn..."></textarea>
+                </div>
+
+                <div class="col-span-2">
+                    <label
+                        class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">File đính kèm (Ảnh/Tài liệu)</label>
+                    <input type="file" name="attachment" accept="image/*,.pdf,.doc,.docx"
+                        class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#283039] focus:border-primary focus:ring-primary transition-colors py-2 px-4 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90">
                 </div>
             </div>
 

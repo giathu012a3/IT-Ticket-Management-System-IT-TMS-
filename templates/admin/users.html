@@ -17,9 +17,23 @@
         <div
             class="lg:col-span-2 bg-white dark:bg-[#111418] border border-slate-200 dark:border-[#3b4754] rounded-xl overflow-hidden shadow-sm flex flex-col">
             <div
-                class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-white/5 flex justify-between items-center">
+                class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h3 class="text-sm font-bold dark:text-white">Danh sách Tài khoản</h3>
-                <button class="text-xs font-medium text-primary hover:underline">Xuất CSV</button>
+                <form action="{{ url_for('admin.admin_users') }}" method="GET" class="flex gap-2">
+                    <select name="role" class="text-xs rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111418] text-slate-700 dark:text-slate-300 px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary shadow-sm outline-none">
+                        <option value="all" {% if current_role == 'all' %}selected{% endif %}>Tất cả</option>
+                        <option value="admin" {% if current_role == 'admin' %}selected{% endif %}>Admin</option>
+                        <option value="leader" {% if current_role == 'leader' %}selected{% endif %}>Leader</option>
+                        <option value="staff" {% if current_role == 'staff' %}selected{% endif %}>Staff</option>
+                        <option value="user" {% if current_role == 'user' %}selected{% endif %}>User</option>
+                    </select>
+                    <input type="text" name="search" value="{{ current_search or '' }}" placeholder="Tìm tên/username..." 
+                        class="text-xs rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111418] text-slate-700 dark:text-slate-300 w-40 px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary shadow-sm outline-none placeholder:text-slate-400">
+                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white rounded-lg px-3 py-1.5 text-xs font-bold transition-colors">Lọc</button>
+                    {% if current_role != 'all' or current_search %}
+                        <a href="{{ url_for('admin.admin_users') }}" class="flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg px-1 transition-colors"><span class="material-symbols-outlined text-[16px]">close</span></a>
+                    {% endif %}
+                </form>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
@@ -41,9 +55,8 @@
                                         class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
                                         {{ user.username[0]|upper }}
                                     </div>
-                                    <div>
-                                        <p class="text-sm font-bold dark:text-white">{{ user.full_name }}</p>
-                                        <p class="text-xs text-slate-500">@{{ user.username }}</p>
+                                        <a href="{{ url_for('admin.admin_user_detail', user_id=user.id) }}" class="text-sm font-bold dark:text-white hover:text-primary transition-colors">{{ user.full_name }}</a>
+                                        <p class="text-xs text-slate-500">@{{ user.username }} • <span class="text-[10px] text-slate-400 font-medium">{{ user.department or 'Không có thông tin phòng ban' }}</span></p>
                                     </div>
                                 </div>
                             </td>
@@ -158,6 +171,14 @@
                     <input type="password" name="password" required
                         class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white text-sm focus:ring-primary focus:border-primary"
                         placeholder="••••••••">
+                </div>
+
+                <div>
+                    <label
+                        class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Phòng ban (Không bắt buộc)</label>
+                    <input type="text" name="department"
+                        class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#283039] text-slate-900 dark:text-white text-sm focus:ring-primary focus:border-primary"
+                        placeholder="Ví dụ: Kế toán, Nhân sự...">
                 </div>
 
                 <div>

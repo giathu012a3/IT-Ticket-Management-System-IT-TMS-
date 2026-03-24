@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "components/pagination.html" import render_pagination %}
+
+{% block title %}Lịch sử xử lý - TicketSys{% endblock %}
+
+{% block content %}
+<div id="history-wrapper" class="ajax-container flex flex-col h-full">
+    <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold dark:text-white tracking-tight">Lịch sử xử lý</h2>
+            <p class="text-slate-500 dark:text-slate-400 text-sm">Tra cứu các yêu cầu bạn đã giải quyết hoặc đóng.</p>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-[#111418] border border-slate-200 dark:border-[#3b4754] rounded-xl overflow-hidden shadow-sm flex flex-col h-[calc(100vh-180px)]">
+        <div class="overflow-y-auto custom-scrollbar flex-1">
+            <table class="w-full text-left">
+                <thead class="sticky top-0 z-10 w-full">
+                    <tr class="bg-slate-50 dark:bg-slate-800/80 backdrop-blur text-slate-500 dark:text-[#9dabb9] text-xs font-bold uppercase tracking-wider">
+                        <th class="px-6 py-4">Mã số</th>
+                        <th class="px-6 py-4">Tiêu đề & Người Y/C</th>
+                        <th class="px-6 py-4">Trạng thái</th>
+                        <th class="px-6 py-4">Độ ưu tiên</th>
+                        <th class="px-6 py-4">Cập nhật lần cuối</th>
+                        <th class="px-6 py-4 text-right">Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for ticket in history_pagination.items %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                        <td class="px-6 py-4 font-mono text-xs text-primary font-bold">#{{ ticket.id }}</td>
+                        <td class="px-6 py-4 text-sm dark:text-slate-300">
+                            <span class="flex items-center gap-1 font-medium">
+                                <span class="truncate max-w-[200px]">{{ ticket.title }}</span>
+                                {% if ticket.attachments %}
+                                <span class="material-symbols-outlined text-sm text-slate-400" title="Có đính kèm">attach_file</span>
+                                {% endif %}
+                            </span>
+                            <span class="text-xs text-slate-500">{{ ticket.category }} • {{ ticket.creator.full_name }} ({{ ticket.creator.department or 'N/A' }})</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold {{ ticket.status_color }}">
+                                {{ ticket.status_label }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if ticket.priority == 'Critical' %}
+                            <span class="text-red-600 font-bold text-xs uppercase">Khẩn cấp</span>
+                            {% elif ticket.priority == 'High' %}
+                            <span class="text-orange-600 font-bold text-xs uppercase">Cao</span>
+                            {% else %}
+                            <span class="text-slate-500 text-xs">{{ ticket.priority }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-xs text-slate-500 flex flex-col gap-1">
+                            <span>CS: {{ ticket.updated_at.strftime('%H:%M %d/%m') }}</span>
+                            {% if ticket.due_date %}
+                            <span class="text-slate-400" title="SLA ban đầu">SLA: {{ ticket.due_date.strftime('%H:%M %d/%m') }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}"
+                                class="text-slate-400 hover:text-primary transition-colors">
+                                <span class="material-symbols-outlined">visibility</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    {% if not history_pagination.items %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                            Lịch sử trống. Bạn chưa hoàn tất yêu cầu nào.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        {% if history_pagination.items %}
+        <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-white/5 mt-auto">
+            {{ render_pagination(history_pagination, 'staff.staff_history') }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -3,51 +3,56 @@ from flask_login import login_user, logout_user, login_required, current_user
 from models import User
 from extensions import db
 
-auth_bp = Blueprint('auth', __name__)
+auth_bp = Blueprint("auth", __name__)
 
-@auth_bp.route('/login', methods=['GET', 'POST'])
+
+@auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
-        
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
-        
-        if user and user.password == password: # Plain text for demo as requested
-            login_user(user)
-            return redirect(url_for('main.index'))
-        else:
-            flash('Tên đăng nhập hoặc mật khẩu không đúng')
-            
-    return render_template('login.html')
+        return redirect(url_for("main.index"))
 
-@auth_bp.route('/logout')
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.check_password(password):
+            login_user(user)
+            from models import log_activity
+
+            log_activity(user.id, "Login", "Đăng nhập vào hệ thống thành công")
+            return redirect(url_for("main.index"))
+        else:
+            flash("Tên đăng nhập hoặc mật khẩu không đúng", "error")
+
+    return render_template("login.html")
+
+
+@auth_bp.route("/logout")
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('auth.login'))
+    return redirect(url_for("auth.login"))
 
-@auth_bp.route('/change-password', methods=['GET', 'POST'])
+
+@auth_bp.route("/change-password", methods=["GET", "POST"])
 @login_required
 def change_password():
-    if request.method == 'POST':
-        current_password = request.form.get('current_password')
-        new_password = request.form.get('new_password')
-        confirm_password = request.form.get('confirm_password')
+    if request.method == "POST":
+        current_password = request.form.get("current_password")
+        new_password = request.form.get("new_password")
+        confirm_password = request.form.get("confirm_password")
 
         if not current_password or not new_password or not confirm_password:
-            flash('Vui lòng điền đầy đủ thông tin')
-        elif current_user.password != current_password:
-            flash('Mật khẩu hiện tại không đúng')
+            flash("Vui lòng điền đầy đủ thông tin", "warning")
+        elif not current_user.check_password(current_password):
+            flash("Mật khẩu hiện tại không đúng", "error")
         elif new_password != confirm_password:
-            flash('Mật khẩu mới không khớp')
+            flash("Mật khẩu mới không khớp", "error")
         else:
-            # In a real app, hash this!
-            current_user.password = new_password
+            current_user.set_password(new_password)
             db.session.commit()
-            flash('Đổi mật khẩu thành công!')
-            return redirect(url_for('user.user_dashboard')) # Or stay on page
-            
-    return render_template('change_password.html')
+            flash("Đổi mật khẩu thành công!", "success")
+            return redirect(url_for("main.index"))
+
+    return render_template("change_password.html")

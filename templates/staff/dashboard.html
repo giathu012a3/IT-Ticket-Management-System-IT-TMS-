@@ -83,10 +83,24 @@
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4">
-                                <div class="font-medium text-slate-900 dark:text-white line-clamp-1">{{ ticket.title }}
+                                <div class="font-medium text-slate-900 dark:text-white line-clamp-1 flex items-center gap-1">
+                                    {{ ticket.title }}
+                                    {% if ticket.attachments %}
+                                    <span class="material-symbols-outlined text-sm text-slate-400" title="Có đính kèm">attach_file</span>
+                                    {% endif %}
                                 </div>
-                                <div class="text-xs text-slate-400 font-mono mt-0.5">#{{ ticket.id }} • {{
+                                <div class="text-xs text-slate-400 font-mono mt-0.5">#{{ ticket.id }} • Cập nhật: {{
                                     ticket.updated_at.strftime('%H:%M %d/%m') }}</div>
+                                {% if ticket.due_date %}
+                                <div class="text-[10px] font-bold mt-1 {% if ticket.due_date < now_vn and ticket.status not in ['Resolved', 'Closed'] %}text-red-500 animate-pulse{% else %}text-slate-500{% endif %}">
+                                    SLA (Hạn chót): {{ ticket.due_date.strftime('%H:%M %d/%m') }}
+                                </div>
+                                {% else %}
+                                <div class="text-[10px] font-bold mt-1 text-slate-400">
+                                    SLA (Hạn chót): N/A (Vé cũ)
+                                </div>
+                                {% endif %}
+                                <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{{ ticket.creator.full_name }} ({{ ticket.creator.department or 'N/A' }})</div>
                             </td>
                             <td class="px-6 py-4">
                                 <span

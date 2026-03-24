@@ -3,6 +3,96 @@
 
 {% block title %}Phân công Yêu cầu - TicketSys{% endblock %}
 
+{% block extra_head %}
+<!-- Include Choices.js for beautiful searchable dropdowns -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<style>
+    /* Choices.js chips/tags styling */
+    .choices__list--multiple .choices__item {
+        background-color: #137fec !important;
+        border: none !important;
+        border-radius: 4px !important;
+        font-weight: 600 !important;
+        font-size: 0.75rem !important;
+        padding: 2px 8px !important;
+        margin-right: 4px !important;
+        margin-bottom: 2px !important;
+    }
+    .dark .choices__list--multiple .choices__item {
+        background-color: #1e3a8a !important;
+        color: #bfdbfe !important;
+    }
+    .choices__list--multiple .choices__item.is-highlighted {
+        background-color: #2563eb !important;
+    }
+    .choices__list--multiple .choices__button {
+        border-left: 1px solid rgba(255, 255, 255, 0.2) !important;
+        margin-left: 8px !important;
+        width: 16px !important;
+        opacity: 0.8;
+    }
+
+    /* Dark Mode Overrides - FORCED */
+    .dark .choices__inner {
+        background-color: #111418 !important;
+        border-color: #3b4754 !important;
+        color: white !important;
+    }
+    .dark .choices__list--dropdown {
+        background-color: #1e2329 !important;
+        border-color: #3b4754 !important;
+        color: white !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4) !important;
+    }
+    .dark .choices__list--dropdown .choices__item--selectable {
+        color: #d1d5db !important;
+    }
+    .dark .choices__list--dropdown .choices__item--selectable.is-highlighted {
+        background-color: #137fec !important;
+        color: white !important;
+    }
+    .dark .choices__list--dropdown .choices__placeholder {
+        color: #94a3b8 !important;
+        opacity: 0.6;
+    }
+    .dark .choices__input {
+        background-color: transparent !important;
+        color: white !important;
+    }
+
+    /* Show icons on hover OR when dropdown is focused/open */
+    .action-group {
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s;
+        transform: translateX(10px);
+    }
+    /* Keep visible when row is hovered OR contains focused elements OR Choices is open */
+    tr:hover .action-group,
+    tr:focus-within .action-group,
+    tr.is-open .action-group {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0);
+    }
+
+    /* Fixed Z-index for Sticky Header and Notification overlap */
+    .sticky.top-0 { z-index: 20 !important; }
+    
+    .dark .choices__input {
+        background-color: transparent !important;
+        color: white !important;
+    }
+    .choices[data-type*="select-one"]::after {
+        border-color: #94a3b8 transparent transparent transparent !important;
+    }
+    .choices[data-type*="select-one"].is-open::after {
+        border-color: transparent transparent #94a3b8 transparent !important;
+    }
+</style>
+{% endblock %}
+
 
 {% block content %}
 <div id="assignment-wrapper" class="ajax-container flex flex-col h-full">
@@ -30,7 +120,7 @@
                         <th class="px-6 py-4">Người yêu cầu</th>
                         <th class="px-6 py-4">Tiêu đề</th>
                         <th class="px-6 py-4">Độ ưu tiên</th>
-                        <th class="px-6 py-4">Thời gian tạo</th>
+                        <th class="px-6 py-4">Thời gian / SLA</th>
                         <th class="px-6 py-4">Thao tác</th>
                     </tr>
                 </thead>
@@ -40,70 +130,91 @@
                         class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
                         <td class="px-6 py-4 font-mono text-xs text-primary font-bold">#{{ ticket.id }}</td>
                         <td class="px-6 py-4">
-                            <div class="flex items-center gap-2">
-                                <div
-                                    class="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                                    {{ ticket.creator.username[0]|upper if ticket.creator and ticket.creator.username
-                                    else
-                                    '?' }}
+                            <div class="flex items-center gap-3">
+                                <div class="relative">
+                                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-xs font-bold text-primary ring-1 ring-primary/20">
+                                        {{ ticket.creator.username[0]|upper if ticket.creator and ticket.creator.username else '?' }}
+                                    </div>
+                                    <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-[#111418] rounded-full"></div>
                                 </div>
-                                <span class="text-sm font-medium dark:text-white">{{ ticket.creator.full_name if
-                                    ticket.creator else 'Unknown' }}</span>
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-semibold dark:text-white leading-tight">{{ ticket.creator.full_name if ticket.creator else 'Unknown' }}</span>
+                                    <span class="text-[10px] text-slate-500 font-medium">{{ ticket.creator.department or 'N/A' }}</span>
+                                </div>
                             </div>
                         </td>
                         <td class="px-6 py-4 text-sm dark:text-slate-300">
-                            <span class="block truncate max-w-[250px] font-medium">{{ ticket.title }}</span>
+                            <span class="flex items-center gap-1 font-medium">
+                                <span class="truncate max-w-[200px]">{{ ticket.title }}</span>
+                                {% if ticket.attachments %}
+                                <span class="material-symbols-outlined text-sm text-slate-400" title="Có đính kèm">attach_file</span>
+                                {% endif %}
+                            </span>
                             <span class="text-xs text-slate-500">{{ ticket.category }}</span>
                         </td>
                         <td class="px-6 py-4">
                             {% if ticket.priority == 'Critical' %}
-                            <span
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-500">Khẩn
-                                cấp</span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                                Khẩn cấp
+                            </span>
                             {% elif ticket.priority == 'High' %}
-                            <span
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-500">Cao</span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800/50">
+                                <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                                Cao
+                            </span>
                             {% else %}
-                            <span
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400">{{
-                                ticket.priority }}</span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50">
+                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                {{ ticket.priority }}
+                            </span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-xs text-slate-500">
-                            {{ ticket.created_at.strftime('%H:%M %d/%m') }}
+                        <td class="px-6 py-4 text-xs text-slate-500 flex flex-col gap-1">
+                            <span>Tạo: {{ ticket.created_at.strftime('%H:%M %d/%m') }}</span>
+                            {% if ticket.due_date %}
+                            <span class="text-red-500 font-bold" title="Hạn chót">Hạn: {{ ticket.due_date.strftime('%H:%M %d/%m') }}</span>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4">
-                            <form onsubmit="handleAssign(event, '{{ ticket.id }}')" class="flex gap-2">
-                                <select name="staff_id" required
-                                    class="text-xs py-1.5 pl-2 pr-8 rounded border-slate-200 bg-slate-50 dark:bg-[#283039] dark:border-slate-700 dark:text-white focus:ring-primary focus:border-primary">
-                                    <option value="" disabled selected>Chọn nhân viên...</option>
-                                    {% for staff in staff_members %}
-                                    <option value="{{ staff.id }}">{{ staff.full_name }} ({{ staff.username }})</option>
-                                    {% endfor %}
-                                </select>
-                                <button type="submit"
-                                    class="bg-primary hover:bg-primary/90 text-white rounded p-1.5 transition-colors shadow-sm">
-                                    <span class="material-symbols-outlined text-sm">person_add</span>
-                                </button>
+                            <div class="flex items-center gap-2 max-w-[320px] action-group">
+                                <form onsubmit="handleAssign(event, '{{ ticket.id }}')" class="flex-1 flex gap-2 items-center">
+                                    <div class="flex-1 min-w-[180px]">
+                                        <select name="staff_id" required class="staff-select">
+                                            <option value="">Chọn nhân viên...</option>
+                                            {% for staff in staff_members %}
+                                            <option value="{{ staff.id }}">
+                                                {{ staff.full_name }} ({{ staff.active_count or 0 }} việc)
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <button type="submit"
+                                        class="inline-flex items-center justify-center w-10 h-10 bg-primary hover:bg-primary/90 text-white rounded-lg transition-all shadow-sm shadow-primary/20 hover:scale-105 active:scale-95 flex-shrink-0"
+                                        title="Giao việc">
+                                        <span class="material-symbols-outlined text-[20px]">person_add</span>
+                                    </button>
+                                </form>
                                 <button type="button" onclick="openRejectModal('{{ ticket.id }}')"
-                                    class="bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-400 rounded p-1.5 transition-colors shadow-sm"
-                                    title="Từ chối">
-                                    <span class="material-symbols-outlined text-sm">block</span>
+                                    class="inline-flex items-center justify-center w-10 h-10 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/40 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all flex-shrink-0"
+                                    title="Từ chối yêu cầu">
+                                    <span class="material-symbols-outlined text-[20px]">block</span>
                                 </button>
-                            </form>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
 
                     {% if not new_tickets_pagination.items %}
                     <tr>
-                        <td colspan="6" class="px-6 py-24 text-center text-slate-500 dark:text-slate-400">
-                            <div
-                                class="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span class="material-symbols-outlined text-emerald-500 text-3xl">check_circle</span>
+                        <td colspan="6" class="px-6 py-32 text-center">
+                            <div class="max-w-xs mx-auto">
+                                <div class="w-20 h-20 bg-emerald-50 dark:bg-emerald-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6 transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                                    <span class="material-symbols-outlined text-emerald-500 text-4xl">verified_user</span>
+                                </div>
+                                <h4 class="text-lg font-bold dark:text-white mb-2">Hàng đợi trống!</h4>
+                                <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Tuyệt vời! Tất cả các yêu cầu đã được xử lý và phân công hoàn tất.</p>
                             </div>
-                            <h4 class="text-sm font-bold dark:text-white mb-1">Tuyệt vời!</h4>
-                            <p class="text-sm">Không còn yêu cầu nào cần phân công.</p>
                         </td>
                     </tr>
                     {% endif %}
@@ -138,8 +249,6 @@
                     <div class="mt-2">
                         <p class="text-sm text-gray-500 dark:text-gray-400">Bạn có chắc chắn muốn từ chối yêu cầu này?
                             Vui lòng nhập lý do bên dưới.</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Bạn có chắc chắn muốn từ chối yêu cầu này?
-                            Vui lòng nhập lý do bên dưới.</p>
                         <form id="rejectForm" onsubmit="handleReject(event)" class="mt-4">
                             <input type="hidden" name="ticket_id" id="rejectTicketId">
                             <textarea name="reason" rows="3" required
@@ -164,6 +273,27 @@
 </div>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const selects = document.querySelectorAll('.staff-select');
+        selects.forEach(select => {
+            const choices = new Choices(select, {
+                removeItemButton: false,
+                searchEnabled: true,
+                itemSelectText: '', 
+                shouldSort: false,
+                placeholder: true,
+                placeholderValue: 'Chọn nhân viên...',
+                searchPlaceholderValue: 'Tìm tên...',
+                noResultsText: 'Không tìm thấy kết quả'
+            });
+
+            // Add class to row when dropdown opens to keep it visible
+            const row = select.closest('tr');
+            select.addEventListener('showDropdown', () => row.classList.add('is-open'));
+            select.addEventListener('hideDropdown', () => row.classList.remove('is-open'));
+        });
+    });
+
     async function handleAssign(event, ticketId) {
         event.preventDefault();
         const form = event.target;
@@ -178,13 +308,15 @@
 
             if (response.ok) {
                 removeTicketRow(ticketId);
-                // Optional: Show toast success
+                if (typeof showToast === 'function') showToast('Đã phân công yêu cầu thành công', 'success');
             } else {
-                alert('Có lỗi xảy ra khi phân công.');
+                if (typeof showToast === 'function') showToast('Có lỗi xảy ra khi phân công.', 'error');
+                else alert('Có lỗi xảy ra khi phân công.');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Có lỗi kết nối.');
+            if (typeof showToast === 'function') showToast('Có lỗi kết nối.', 'error');
+            else alert('Có lỗi kết nối.');
         }
     }
 
@@ -215,12 +347,15 @@
             if (response.ok) {
                 closeRejectModal();
                 removeTicketRow(ticketId);
+                if (typeof showToast === 'function') showToast('Đã từ chối yêu cầu', 'success');
             } else {
-                alert('Có lỗi xảy ra khi từ chối.');
+                if (typeof showToast === 'function') showToast('Có lỗi xảy ra khi từ chối.', 'error');
+                else alert('Có lỗi xảy ra khi từ chối.');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Có lỗi kết nối.');
+            if (typeof showToast === 'function') showToast('Có lỗi kết nối.', 'error');
+            else alert('Có lỗi kết nối.');
         }
     }
 

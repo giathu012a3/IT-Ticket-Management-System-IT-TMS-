@@ -1,13 +1,13 @@
 # IT Ticket Management System
 
-Một hệ thống quản lý vé hỗ trợ CNTT đơn giản được xây dựng bằng Flask.
+Một hệ thống quản lý ticket hỗ trợ CNTT đơn giản được xây dựng bằng Flask.
 
 ## Tính năng
 
 - **Quản lý người dùng**: Đăng ký, Đăng nhập, Phân quyền (Admin, Leader, Staff, User).
-- **Quản lý vé**: Tạo, Phân công, Cập nhật trạng thái, Bình luận.
-- **Thống kê**: Dashboard thống kê số lượng vé theo trạng thái và thời gian.
-- **Thông báo**: Thông báo thời gian thực về cập nhật vé.
+- **Quản lý ticket**: Tạo, Phân công, Cập nhật trạng thái, Bình luận.
+- **Thống kê**: Dashboard thống kê số lượng ticket theo trạng thái và thời gian.
+- **Thông báo**: Thông báo thời gian thực về cập nhật ticket.
 
 ## Cài đặt
 

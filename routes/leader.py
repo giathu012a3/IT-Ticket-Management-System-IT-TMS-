@@ -13,29 +13,16 @@ def leader_dashboard():
     if current_user.role not in ['leader', 'admin']:
         return redirect(url_for('main.index'))
     
-    # Filter Logic
-    # Filter Logic
-    time_range = request.args.get('time_range', 'this_month') # Default to this_month for better dashboard view
-    
-    cur_start, cur_end, prev_start, prev_end = get_date_ranges(time_range)
-    
-    # 1. Fetch Current Period Data
-    query = Ticket.query
-    if cur_start:
-        query = query.filter(Ticket.created_at >= cur_start, Ticket.created_at < cur_end)
-        
+
     try:
-        # Filter Logic
-        time_range = request.args.get('time_range', 'this_month') # Default to this_month for better dashboard view
+        time_range = request.args.get('time_range', 'this_month')
         
         cur_start, cur_end, prev_start, prev_end = get_date_ranges(time_range)
         
-        # 1. Fetch Current Period Data
         query = Ticket.query
         if cur_start:
             query = query.filter(Ticket.created_at >= cur_start, Ticket.created_at < cur_end)
             
-        # 1. Waiting for Assignment vs Assigned (Overview)
         waiting_assignment_count = Ticket.query.join(TicketStatus).filter(
             TicketStatus.name == 'New',
             Ticket.assigned_to_id == None
@@ -45,8 +32,6 @@ def leader_dashboard():
             TicketStatus.name.in_(['Assigned', 'In Progress'])
         ).count()
         
-        # 2. SLA Warnings
-        # Logic: Status New > 24 hours OR Status In Progress > 48 hours
         now = now_vn()
         warning_time_new = now - timedelta(hours=24)
         warning_time_progress = now - timedelta(hours=48)
@@ -58,11 +43,7 @@ def leader_dashboard():
             )
         ).all()
         
-        # Stats: Current
-        # Resolved in Current Range
-        # ... (Existing logic for stats below is fine, just cleaning up duplicates if any)
 
-        # 1. Total Created (Current)
         total_query = Ticket.query
         if cur_start:
             total_query = total_query.filter(Ticket.created_at >= cur_start)
@@ -70,7 +51,6 @@ def leader_dashboard():
             total_query = total_query.filter(Ticket.created_at < cur_end)
         total_tickets = total_query.count()
         
-        # 2. Total Resolved (Current)
         resolved_query = Ticket.query.join(TicketStatus).filter(
             TicketStatus.name.in_(['Resolved', 'Closed']))
         if cur_start:
@@ -79,14 +59,11 @@ def leader_dashboard():
         
         completion_rate = int((resolved_tickets / total_tickets * 100)) if total_tickets > 0 else 0
 
-        # Delta Logic (Keep existing)
         delta_total = 0
         delta_resolved = 0
         if prev_start:
-             # Prev Total
             prev_total = Ticket.query.filter(Ticket.created_at >= prev_start, Ticket.created_at < prev_end).count()
             delta_total = total_tickets - prev_total
-            # Prev Resolved
             prev_resolved = Ticket.query.join(TicketStatus).filter(
                 TicketStatus.name.in_(['Resolved', 'Closed']),
                 Ticket.updated_at >= prev_start, 
@@ -150,7 +127,7 @@ def leader_dashboard():
                  least_busy_staff = staff_data['name']
         
         # Placeholder for overdue if used in JSON (though removed from template logic mostly, JSON requires it)
-        overdue_tickets = 0 # or logic to count overdue if needed, currently 0 to satisfy keys
+        overdue_tickets = 0
 
         
         # 1. Tickets by Status
@@ -216,6 +193,8 @@ def get_date_ranges(time_range):
     prev_start = None
     prev_end = None
     
+    import re
+
     if time_range == '7d':
         cur_end = now
         cur_start = now - timedelta(days=7)
@@ -250,6 +229,19 @@ def get_date_ranges(time_range):
         else:
             prev_start = cur_start.replace(month=cur_start.month-1, day=1, hour=0, minute=0, second=0, microsecond=0)
         prev_end = cur_start
+    elif time_range and re.match(r'^\d{4}-\d{2}$', time_range):
+        year, month = map(int, time_range.split('-'))
+        cur_start = now.replace(year=year, month=month, day=1, hour=0, minute=0, second=0, microsecond=0)
+        if month == 12:
+            cur_end = now.replace(year=year+1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            cur_end = now.replace(year=year, month=month+1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            
+        if month == 1:
+            prev_start = now.replace(year=year-1, month=12, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            prev_start = now.replace(year=year, month=month-1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        prev_end = cur_start
         
     return cur_start, cur_end, prev_start, prev_end
 
@@ -259,9 +251,6 @@ def assignment():
     if current_user.role not in ['leader', 'admin']:
         return redirect(url_for('main.index'))
     
-    # Only fetch New or Unassigned tickets
-    # Only fetch New or Unassigned tickets
-    # Join TicketStatus to filter by name
     page = request.args.get('page', 1, type=int)
     new_tickets_pagination = Ticket.query.join(TicketStatus).filter(
         or_(TicketStatus.name == 'New', Ticket.assigned_to_id == None),

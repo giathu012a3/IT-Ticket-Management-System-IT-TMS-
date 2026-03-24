@@ -24,40 +24,56 @@
                     <span class="font-bold text-slate-800 dark:text-white">{{ ticket.title }}</span>
                 </div>
 
-                <div class="flex flex-row-reverse justify-center gap-2 group">
-                    <input type="radio" name="rating" value="5" id="star5" class="peer/5 sr-only required">
-                    <label for="star5"
-                        class="text-slate-300 peer-checked/5:text-amber-400 hover:!text-amber-400 peer-hover/5:text-amber-400 cursor-pointer transition-colors duration-200">
-                        <span class="material-symbols-outlined text-4xl"
-                            style="font-variation-settings: 'FILL' 1;">star</span>
+                <style>
+                    .star-rating {
+                        display: flex;
+                        flex-direction: row-reverse;
+                        justify-content: center;
+                        gap: 0.5rem;
+                    }
+                    .star-rating input {
+                        display: none;
+                    }
+                    .star-rating label {
+                        color: #cbd5e1; /* slate-300 */
+                        cursor: pointer;
+                        transition: color 0.2s;
+                    }
+                    /* For dark mode */
+                    .dark .star-rating label {
+                        color: #475569; /* slate-600 */
+                    }
+                    
+                    .star-rating label:hover,
+                    .star-rating label:hover ~ label,
+                    .star-rating input:checked ~ label {
+                        color: #fbbf24 !important; /* amber-400 */
+                    }
+                </style>
+                <div class="star-rating">
+                    <input type="radio" name="rating" value="5" id="star5" required>
+                    <label for="star5">
+                        <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">star</span>
                     </label>
 
-                    <input type="radio" name="rating" value="4" id="star4" class="peer/4 sr-only">
-                    <label for="star4"
-                        class="text-slate-300 peer-checked/4:text-amber-400 hover:!text-amber-400 peer-hover/4:text-amber-400 cursor-pointer transition-colors duration-200">
-                        <span class="material-symbols-outlined text-4xl"
-                            style="font-variation-settings: 'FILL' 1;">star</span>
+                    <input type="radio" name="rating" value="4" id="star4">
+                    <label for="star4">
+                        <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">star</span>
                     </label>
 
-                    <input type="radio" name="rating" value="3" id="star3" class="peer/3 sr-only">
-                    <label for="star3"
-                        class="text-slate-300 peer-checked/3:text-amber-400 hover:!text-amber-400 peer-hover/3:text-amber-400 cursor-pointer transition-colors duration-200">
-                        <span class="material-symbols-outlined text-4xl"
-                            style="font-variation-settings: 'FILL' 1;">star</span>
+                    <input type="radio" name="rating" value="3" id="star3">
+                    <label for="star3">
+                        <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">star</span>
                     </label>
 
-                    <input type="radio" name="rating" value="2" id="star2" class="peer/2 sr-only">
-                    <label for="star2"
-                        class="text-slate-300 peer-checked/2:text-amber-400 hover:!text-amber-400 peer-hover/2:text-amber-400 cursor-pointer transition-colors duration-200">
-                        <span class="material-symbols-outlined text-4xl"
-                            style="font-variation-settings: 'FILL' 1;">star</span>
+                    <input type="radio" name="rating" value="2" id="star2">
+                    <label for="star2">
+                        <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">star</span>
                     </label>
 
-                    <input type="radio" name="rating" value="1" id="star1" class="peer/1 sr-only">
-                    <label for="star1"
-                        class="text-slate-300 peer-checked/1:text-amber-400 hover:!text-amber-400 peer-hover/1:text-amber-400 cursor-pointer transition-colors duration-200">
-                        <span class="material-symbols-outlined text-4xl"
-                            style="font-variation-settings: 'FILL' 1;">star</span>
+                    <input type="radio" name="rating" value="1" id="star1">
+                    <label for="star1">
+                        <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">star</span>
                     </label>
                 </div>
             </div>
@@ -71,9 +87,10 @@
             </div>
 
             <div class="flex items-center justify-between pt-4">
-                <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}"
-                    class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-sm font-medium">Bỏ
-                    qua & Đóng</a>
+                <button type="submit" formaction="{{ url_for('user.skip_ticket_feedback', ticket_id=ticket.id) }}"
+                    class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold px-6 py-3 rounded-lg transition-colors">
+                    Đóng, bỏ qua đánh giá
+                </button>
                 <button type="submit"
                     class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-lg shadow-lg shadow-emerald-500/20 transition-transform active:scale-95">
                     Gửi đánh giá

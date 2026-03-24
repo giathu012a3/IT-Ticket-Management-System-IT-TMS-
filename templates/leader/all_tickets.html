@@ -59,11 +59,11 @@
                     <tr
                         class="bg-slate-50 dark:bg-slate-800/80 backdrop-blur text-slate-500 dark:text-[#9dabb9] text-xs font-bold uppercase tracking-wider">
                         <th class="px-6 py-4">Mã số</th>
-                        <th class="px-6 py-4">Tiêu đề</th>
+                        <th class="px-6 py-4">Tiêu đề & Người Y/C</th>
                         <th class="px-6 py-4">Trạng thái</th>
                         <th class="px-6 py-4">Độ ưu tiên</th>
                         <th class="px-6 py-4">Người xử lý</th>
-                        <th class="px-6 py-4">Ngày tạo</th>
+                        <th class="px-6 py-4">Ngày tạo / SLA</th>
                         <th class="px-6 py-4 text-right">Chi tiết</th>
                     </tr>
                 </thead>
@@ -72,8 +72,13 @@
                     <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
                         <td class="px-6 py-4 font-mono text-xs text-primary font-bold">#{{ ticket.id }}</td>
                         <td class="px-6 py-4 text-sm dark:text-slate-300">
-                            <span class="block font-medium truncate max-w-[200px]">{{ ticket.title }}</span>
-                            <span class="text-xs text-slate-500">{{ ticket.category }}</span>
+                            <span class="flex items-center gap-1 font-medium">
+                                <span class="truncate max-w-[200px]">{{ ticket.title }}</span>
+                                {% if ticket.attachments %}
+                                <span class="material-symbols-outlined text-sm text-slate-400" title="Có đính kèm">attach_file</span>
+                                {% endif %}
+                            </span>
+                            <span class="text-xs text-slate-500">{{ ticket.category }} • {{ ticket.creator.full_name }} ({{ ticket.creator.department or 'N/A' }})</span>
                         </td>
                         <td class="px-6 py-4">
                             <span
@@ -98,8 +103,11 @@
                             <span class="text-slate-400 italic text-xs">Chưa phân công</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-xs text-slate-500">
-                            {{ ticket.created_at.strftime('%d/%m/%Y') }}
+                        <td class="px-6 py-4 text-xs text-slate-500 flex flex-col gap-1">
+                            <span>Tạo: {{ ticket.created_at.strftime('%H:%M %d/%m') }}</span>
+                            {% if ticket.due_date %}
+                            <span class="text-red-500 font-bold" title="Hạn chót">Hạn: {{ ticket.due_date.strftime('%H:%M %d/%m') }}</span>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 text-right">
                             <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}"

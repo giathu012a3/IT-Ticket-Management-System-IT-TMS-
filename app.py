@@ -18,12 +18,16 @@ def create_app():
 
     # Context Processor for Notifications (Global)
     @app.context_processor
-    def inject_notifications():
+    def inject_global():
+        from models import now_vn
+        data = dict(now_vn=now_vn())
         if current_user.is_authenticated:
             notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).limit(10).all()
             unread_count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
-            return dict(notifications=notifications, unread_count=unread_count)
-        return dict(notifications=[], unread_count=0)
+            data.update(dict(notifications=notifications, unread_count=unread_count))
+        else:
+            data.update(dict(notifications=[], unread_count=0))
+        return data
 
     # Register Blueprints
     from routes.auth import auth_bp
@@ -39,6 +43,16 @@ def create_app():
     app.register_blueprint(staff_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(main_bp)
+
+    @app.errorhandler(404)
+    def page_not_found(e):
+        from flask import render_template
+        return render_template('404.html'), 404
+        
+    @app.errorhandler(413) # Request Entity Too Large
+    def request_entity_too_large(e):
+        from flask import render_template
+        return render_template('413.html'), 413
 
     return app
 
