@@ -23,7 +23,7 @@ user_bp = Blueprint("user", __name__)
 @user_bp.route("/dashboard")
 @login_required
 def user_dashboard():
-    if current_user.role not in ["user"]:  # Simple RBAC check
+    if current_user.role not in ["user"]:
         return redirect(url_for("main.index"))
 
     active_tickets_count = (
@@ -107,7 +107,6 @@ def create_ticket():
         if department:
             current_user.department = department
 
-        # Tính toán SLA (Service Level Agreement)
         sla_hours = {"Low": 72, "Medium": 24, "High": 4, "Critical": 1}
         due_date = now_vn() + timedelta(hours=sla_hours.get(priority, 24))
 
@@ -230,7 +229,6 @@ def add_comment(ticket_id):
 
     if not is_internal:
         if current_user.id == ticket.creator_id:
-            # User commented -> Notify Assigned Staff and Leaders
             if ticket.assigned_to_id:
                 n = Notification(
                     user_id=ticket.assigned_to_id,
@@ -240,9 +238,7 @@ def add_comment(ticket_id):
                 db.session.add(n)
             leaders = User.query.filter_by(role="leader").all()
             for leader in leaders:
-                if (
-                    leader.id != current_user.id
-                ):  # Don't notify if leader is the one commenting
+                if leader.id != current_user.id:
                     n = Notification(
                         user_id=leader.id,
                         message=f"Khách hàng phản hồi: {ticket.title}",
@@ -250,7 +246,6 @@ def add_comment(ticket_id):
                     )
                     db.session.add(n)
         else:
-            # Staff/Leader commented -> Notify User
             if ticket.creator_id != current_user.id:
                 n = Notification(
                     user_id=ticket.creator_id,

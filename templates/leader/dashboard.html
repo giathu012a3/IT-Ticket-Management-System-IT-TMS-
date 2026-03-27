@@ -284,9 +284,6 @@
                 }
             }
 
-            // Note: waiting_assignment and assigned_count in this design are NOT updated by time range filter because they are snapshots of "Now".
-            // Only metrics inside the "Current Range" logic (Total Created, Resolved in Period) change.
-
             // Reload Charts
             categoryData = data.category_counts;
             staffLabels = data.staff_labels;

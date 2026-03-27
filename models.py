@@ -9,11 +9,11 @@ def now_vn():
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False) # In a real app, hash this!
+    password = db.Column(db.String(120), nullable=False)
     full_name = db.Column(db.String(120))
-    role = db.Column(db.String(20), default='user') # admin, leader, staff, user
-    status = db.Column(db.String(20), default='active') # active, inactive
-    department = db.Column(db.String(100)) # e.g. IT, HR, Accounting
+    role = db.Column(db.String(20), default='user')
+    status = db.Column(db.String(20), default='active')
+    department = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=now_vn)
 
     tickets_created = db.relationship('Ticket', foreign_keys='Ticket.creator_id', backref='creator', lazy=True)
@@ -28,7 +28,6 @@ class User(db.Model, UserMixin):
         if self.password.startswith('scrypt:') or self.password.startswith('pbkdf2:'):
             return check_password_hash(self.password, password)
         else:
-            # Legacy plaintext fallback & auto-migrate
             if self.password == password:
                 self.set_password(password)
                 db.session.commit()
@@ -48,14 +47,23 @@ class User(db.Model, UserMixin):
         }
         return roles.get(self.role, self.role)
 
+    @property
+    def active_count(self):
+        return Ticket.query.join(TicketStatus).filter(
+            Ticket.assigned_to_id == self.id,
+            TicketStatus.name.in_(['Assigned', 'In Progress', 'Waiting'])
+        ).count()
+
+    @property
+    def assigned_tickets_count(self):
+        return Ticket.query.filter_by(assigned_to_id=self.id).count()
+
 class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    # status column removed, relying on status_id and relationship
     priority = db.Column(db.String(20), default='Medium')
     category = db.Column(db.String(50))
-    # deadline removed
     created_at = db.Column(db.DateTime, default=now_vn)
     updated_at = db.Column(db.DateTime, default=now_vn, onupdate=now_vn)
     due_date = db.Column(db.DateTime)
@@ -64,7 +72,6 @@ class Ticket(db.Model):
     rejection_reason = db.Column(db.Text)
     status_id = db.Column(db.Integer, db.ForeignKey('ticket_status.id'))
     
-    # Relationships
     status_obj = db.relationship('TicketStatus', backref='tickets', lazy=True)
     comments = db.relationship('Comment', backref='ticket', lazy=True)
     feedback = db.relationship('Feedback', backref='ticket', uselist=False, lazy=True)
@@ -90,9 +97,9 @@ class Ticket(db.Model):
 
 class TicketStatus(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False) # Internal name: New, Assigned...
-    label = db.Column(db.String(100), nullable=False) # Display name: Mới, Đã phân công...
-    color_class = db.Column(db.String(100)) # Bootstrap/Tailwind class
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    label = db.Column(db.String(100), nullable=False)
+    color_class = db.Column(db.String(100))
     
     def __repr__(self):
         return f'<TicketStatus {self.name}>'
@@ -135,7 +142,7 @@ def log_activity(user_id, action, details, ip_address=None):
     if ip_address is None:
         try:
             ip_address = request.remote_addr
-        except RuntimeError: # Working outside of request context
+        except RuntimeError:
             ip_address = 'System'
             
     log = SystemLog(

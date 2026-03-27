@@ -90,7 +90,6 @@ def update_ticket_status(ticket_id):
 
     new_status = request.form.get("status")
     if new_status:
-        # Business logic: Cannot start working on a ticket without an assignee
         if not ticket.assigned_to_id and new_status not in ["New", "Rejected", "Closed"]:
             flash("Lỗi: Yêu cầu này chưa được phân công nhân sự xử lý!", "error")
             return redirect(url_for("user.view_ticket", ticket_id=ticket.id))

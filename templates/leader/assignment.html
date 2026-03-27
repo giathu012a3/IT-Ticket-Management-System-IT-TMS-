@@ -128,7 +128,11 @@
                     {% for ticket in new_tickets_pagination.items %}
                     <tr id="ticket-row-{{ ticket.id }}"
                         class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
-                        <td class="px-6 py-4 font-mono text-xs text-primary font-bold">#{{ ticket.id }}</td>
+                        <td class="px-6 py-4 font-mono text-xs font-bold">
+                            <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}" target="_blank"
+                                class="text-primary hover:underline hover:text-primary/80 transition-colors"
+                                title="Xem chi tiết ticket #{{ ticket.id }}">#{{ ticket.id }}</a>
+                        </td>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
                                 <div class="relative">
@@ -144,12 +148,14 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 text-sm dark:text-slate-300">
-                            <span class="flex items-center gap-1 font-medium">
+                            <a href="{{ url_for('user.view_ticket', ticket_id=ticket.id) }}" target="_blank"
+                                class="flex items-center gap-1 font-medium group/title hover:text-primary transition-colors">
                                 <span class="truncate max-w-[200px]">{{ ticket.title }}</span>
                                 {% if ticket.attachments %}
                                 <span class="material-symbols-outlined text-sm text-slate-400" title="Có đính kèm">attach_file</span>
                                 {% endif %}
-                            </span>
+                                <span class="material-symbols-outlined text-[14px] opacity-0 group-hover/title:opacity-60 transition-opacity text-primary flex-shrink-0">open_in_new</span>
+                            </a>
                             <span class="text-xs text-slate-500">{{ ticket.category }}</span>
                         </td>
                         <td class="px-6 py-4">

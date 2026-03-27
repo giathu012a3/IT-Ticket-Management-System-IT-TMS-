@@ -45,10 +45,8 @@ def admin_dashboard():
         new_users_query = new_users_query.filter(User.created_at < cur_end)
     new_users_count = new_users_query.count()
 
-    # System Logs (Recent 10)
     system_logs = SystemLog.query.order_by(SystemLog.created_at.desc()).limit(10).all()
 
-    # Stats
     total_tickets = len(tickets)
     avg_rating = 0
     if feedbacks:
@@ -241,7 +239,6 @@ def admin_user_detail(user_id):
 
     user = User.query.get_or_404(user_id)
 
-    # Get recent tickets created by the user
     created_tickets = (
         Ticket.query.filter_by(creator_id=user.id)
         .order_by(Ticket.created_at.desc())
@@ -249,7 +246,6 @@ def admin_user_detail(user_id):
         .all()
     )
 
-    # Get recent tickets assigned to the user (if staff)
     assigned_tickets = (
         Ticket.query.filter_by(assigned_to_id=user.id)
         .order_by(Ticket.created_at.desc())
@@ -257,7 +253,6 @@ def admin_user_detail(user_id):
         .all()
     )
 
-    # Get recent system logs for this user
     from models import SystemLog
 
     recent_logs = (
