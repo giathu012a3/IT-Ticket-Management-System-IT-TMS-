@@ -2,8 +2,8 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from sqlalchemy import or_
-from extensions import db
-from models import Ticket, User, Notification, TicketStatus, now_vn
+from ..extensions import db
+from ..models import Ticket, User, Notification, TicketStatus, now_vn
 
 leader_bp = Blueprint("leader", __name__)
 

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
-from models import User
-from extensions import db
+from ..models import User
+from ..extensions import db
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -18,7 +18,7 @@ def login():
 
         if user and user.check_password(password):
             login_user(user)
-            from models import log_activity
+            from ..models import log_activity
 
             log_activity(user.id, "Login", "Đăng nhập vào hệ thống thành công")
             return redirect(url_for("main.index"))

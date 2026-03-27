@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from datetime import datetime
-from extensions import db
-from models import Ticket, Notification, TicketStatus, now_vn
+from ..extensions import db
+from ..models import Ticket, Notification, TicketStatus, now_vn
 
 staff_bp = Blueprint("staff", __name__)
 

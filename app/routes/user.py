@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime
-from extensions import db
-from models import (
+from ..extensions import db
+from ..models import (
     Ticket,
     User,
     Comment,
@@ -174,7 +174,7 @@ def create_ticket():
             db.session.add(n)
         db.session.commit()
 
-        from models import log_activity
+        from ..models import log_activity
 
         log_activity(
             current_user.id, "Create Ticket", f"Tạo mới vé #{ticket.id} - {title}"
@@ -361,7 +361,7 @@ def skip_ticket_feedback(ticket_id):
     ticket.updated_at = now_vn()
     db.session.commit()
 
-    from models import log_activity
+    from ..models import log_activity
 
     log_activity(
         current_user.id,
@@ -371,3 +371,43 @@ def skip_ticket_feedback(ticket_id):
 
     flash("Yêu cầu đã được đóng hoàn toàn!", "success")
     return redirect(url_for("user.user_dashboard"))
+@user_bp.route("/ticket/<int:ticket_id>/reopen", methods=["POST"])
+@login_required
+def reopen_ticket(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
+
+    if ticket.creator_id != current_user.id:
+        flash("Bạn không có quyền này", "error")
+        return redirect(url_for("main.index"))
+
+    if ticket.status != "Resolved":
+        flash("Yêu cầu chỉ có thể mở lại khi ở trạng thái Đã giải quyết", "warning")
+        return redirect(url_for("user.view_ticket", ticket_id=ticket_id))
+
+    # Chuyển về trạng thái In Progress (Đang xử lý)
+    in_progress_status = TicketStatus.query.filter_by(name="In Progress").first()
+    if in_progress_status:
+        ticket.status_id = in_progress_status.id
+    
+    ticket.updated_at = now_vn()
+    db.session.commit()
+
+    # Thông báo cho Staff được phân công
+    if ticket.assigned_to_id:
+        n = Notification(
+            user_id=ticket.assigned_to_id,
+            message=f"Khách hàng đã mở lại yêu cầu: {ticket.title}",
+            link=url_for("user.view_ticket", ticket_id=ticket.id),
+        )
+        db.session.add(n)
+        db.session.commit()
+
+    from ..models import log_activity
+    log_activity(
+        current_user.id,
+        "Reopen Ticket",
+        f"Mở lại vé #{ticket.id} do chưa hài lòng với kết quả xử lý"
+    )
+
+    flash("Yên cầu đã được mở lại thành công. Kỹ thuật viên sẽ tiếp tục xử lý.", "success")
+    return redirect(url_for("user.view_ticket", ticket_id=ticket.id))

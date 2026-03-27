@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from extensions import db
-from models import User, Ticket, Feedback, now_vn
+from ..extensions import db
+from ..models import User, Ticket, Feedback, now_vn
 from datetime import datetime, timedelta
 
 admin_bp = Blueprint("admin", __name__)
@@ -17,7 +17,7 @@ def admin_dashboard():
 
     time_range = request.args.get("time_range", "this_month")
 
-    from routes.leader import get_date_ranges
+    from .leader import get_date_ranges
 
     cur_start, cur_end, prev_start, prev_end = get_date_ranges(time_range)
 
@@ -34,7 +34,7 @@ def admin_dashboard():
     tickets = query_tickets.all()
     feedbacks = query_feedbacks.all()
 
-    from models import SystemLog
+    from ..models import SystemLog
 
     total_users = User.query.count()
 
@@ -158,7 +158,7 @@ def create_user():
     db.session.add(new_user)
     db.session.commit()
 
-    from models import log_activity
+    from ..models import log_activity
 
     log_activity(
         current_user.id,
@@ -181,7 +181,7 @@ def toggle_user_status(user_id):
         flash("Bạn không thể tự vô hiệu hóa tài khoản của chính mình.", "error")
         return redirect(url_for("admin.admin_users"))
 
-    from models import log_activity
+    from ..models import log_activity
 
     if user.status == "inactive":
         user.status = "active"
@@ -219,7 +219,7 @@ def update_user_password():
     user.set_password(new_password)
     db.session.commit()
 
-    from models import log_activity
+    from ..models import log_activity
 
     log_activity(
         current_user.id,
@@ -253,7 +253,7 @@ def admin_user_detail(user_id):
         .all()
     )
 
-    from models import SystemLog
+    from ..models import SystemLog
 
     recent_logs = (
         SystemLog.query.filter_by(user_id=user.id)

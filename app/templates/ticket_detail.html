@@ -20,11 +20,20 @@
         <!-- Action Buttons based on Role -->
         <div class="flex gap-2">
             {% if current_user.role == 'user' and ticket.status == 'Resolved' %}
-            <a href="{{ url_for('user.ticket_feedback', ticket_id=ticket.id) }}"
-                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg shadow-lg shadow-emerald-500/20 flex items-center transition-all animate-pulse">
-                <span class="material-symbols-outlined mr-2">star</span>
-                Đánh giá & Đóng
-            </a>
+            <div class="flex gap-2">
+                <a href="{{ url_for('user.ticket_feedback', ticket_id=ticket.id) }}"
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg shadow-lg shadow-emerald-500/20 flex items-center transition-all">
+                    <span class="material-symbols-outlined mr-2">check_circle</span>
+                    Xác nhận & Đóng
+                </a>
+                <form action="{{ url_for('user.reopen_ticket', ticket_id=ticket.id) }}" method="POST">
+                    <button type="submit" onclick="return confirm('Bạn có chắc chắn muốn mở lại yêu cầu này vì chưa được xử lý thỏa đáng?')"
+                        class="bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 font-bold px-4 py-2 rounded-lg flex items-center hover:bg-rose-200 dark:hover:bg-rose-800/40 transition-all border border-rose-200 dark:border-rose-800/50">
+                        <span class="material-symbols-outlined mr-2">replay</span>
+                        Yêu cầu xử lý lại
+                    </button>
+                </form>
+            </div>
             {% endif %}
 
             {% if current_user.role in ['staff', 'leader'] %}
@@ -64,7 +73,7 @@
                 <select name="status"
                     class="rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-[#283039] dark:text-white py-2 pl-3 pr-10 text-sm focus:ring-primary focus:border-primary shadow-sm">
                     {% for status in statuses %}
-                    {% if status.name in ['In Progress', 'Waiting', 'Resolved'] or status.name == ticket.status %}
+                    {% if status.name in ['In Progress', 'Waiting', 'Resolved'] %}
                     <option value="{{ status.name }}" {% if ticket.status==status.name %}selected{% endif %}>{{
                         status.label }}</option>
                     {% endif %}

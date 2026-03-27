@@ -154,3 +154,7 @@ cython_debug/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Project Uploads
+app/static/uploads/*
+!app/static/uploads/.gitkeep

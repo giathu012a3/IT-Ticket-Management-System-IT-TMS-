@@ -61,20 +61,11 @@
         color: white !important;
     }
 
-    /* Show icons on hover OR when dropdown is focused/open */
+    /* Show icons always */
     .action-group {
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.2s;
-        transform: translateX(10px);
-    }
-    /* Keep visible when row is hovered OR contains focused elements OR Choices is open */
-    tr:hover .action-group,
-    tr:focus-within .action-group,
-    tr.is-open .action-group {
         opacity: 1;
         visibility: visible;
-        transform: translateX(0);
+        transition: all 0.2s;
     }
 
     /* Fixed Z-index for Sticky Header and Notification overlap */

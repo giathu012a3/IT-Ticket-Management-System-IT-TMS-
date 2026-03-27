@@ -1,3 +1,9 @@
-Flask
-Flask-SQLAlchemy
-Flask-Login
+flask
+flask-sqlalchemy
+flask-login
+flask-migrate
+python-dotenv
+werkzeug
+sqlalchemy
+jinja2
+choices.js
