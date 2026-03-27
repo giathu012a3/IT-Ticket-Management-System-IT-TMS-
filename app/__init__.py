@@ -50,7 +50,7 @@ def create_app():
         from flask import render_template
         return render_template('404.html'), 404
         
-    @app.errorhandler(413) # Request Entity Too Large
+    @app.errorhandler(413) 
     def request_entity_too_large(e):
         from flask import render_template
         return render_template('413.html'), 413

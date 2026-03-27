@@ -1,389 +1,550 @@
-{% extends "base.html" %}
-
-{% block title %}Yêu cầu #{{ ticket.id }} - TicketSys{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Yêu cầu #{{ ticket.id }} -
+TicketSys{% endblock %} {% block content %}
 <div class="max-w-6xl mx-auto">
-    <!-- Header -->
-    <div class="flex items-start justify-between mb-6">
-        <div>
-            <div class="flex items-center gap-3 mb-2">
-                <span class="font-mono text-sm font-bold text-slate-400">#{{ ticket.id }}</span>
+  <!-- Header -->
+  <div class="flex items-start justify-between mb-6">
+    <div>
+      <div class="flex items-center gap-3 mb-2">
+        <span class="font-mono text-sm font-bold text-slate-400"
+          >#{{ ticket.id }}</span
+        >
+        <span
+          class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider {{ ticket.status_color }}"
+        >
+          {{ ticket.status_label }}
+        </span>
+      </div>
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
+        {{ ticket.title }}
+      </h1>
+    </div>
+
+    <!-- Action Buttons based on Role -->
+    <div class="flex gap-2">
+      {% if current_user.role == 'user' and ticket.status == 'Resolved' %}
+      <div class="flex gap-2">
+        <a
+          href="{{ url_for('user.ticket_feedback', ticket_id=ticket.id) }}"
+          class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg shadow-lg shadow-emerald-500/20 flex items-center transition-all"
+        >
+          <span class="material-symbols-outlined mr-2">check_circle</span>
+          Xác nhận & Đóng
+        </a>
+        <form
+          action="{{ url_for('user.reopen_ticket', ticket_id=ticket.id) }}"
+          method="POST"
+        >
+          <button
+            type="submit"
+            onclick="
+              return confirm(
+                'Bạn có chắc chắn muốn mở lại yêu cầu này vì chưa được xử lý thỏa đáng?',
+              );
+            "
+            class="bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 font-bold px-4 py-2 rounded-lg flex items-center hover:bg-rose-200 dark:hover:bg-rose-800/40 transition-all border border-rose-200 dark:border-rose-800/50"
+          >
+            <span class="material-symbols-outlined mr-2">replay</span>
+            Yêu cầu xử lý lại
+          </button>
+        </form>
+      </div>
+      {% endif %} {% if current_user.role in ['staff', 'leader'] %} {% if
+      ticket.status in ['Closed', 'Rejected'] %}
+      <!-- Disabled State -->
+      <button
+        disabled
+        class="bg-slate-100 dark:bg-white/5 text-slate-400 font-bold px-4 py-2 rounded-lg cursor-not-allowed flex items-center"
+      >
+        <span class="material-symbols-outlined text-sm mr-2">lock</span>
+        Đã khóa
+      </button>
+      {% elif not ticket.assigned_to_id %}
+      <!-- Unassigned State -->
+      {% if current_user.role == 'leader' %}
+      <div class="flex items-center gap-2">
+        <a
+          href="{{ url_for('leader.assignment') }}"
+          class="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 font-bold px-4 py-2 rounded-lg flex items-center shadow-sm hover:bg-amber-200 dark:hover:bg-amber-800/40 transition-colors"
+        >
+          <span class="material-symbols-outlined text-sm mr-2">person_add</span>
+          Phân công Staff
+        </a>
+        <button
+          onclick="assignToMe('{{ ticket.id }}', '{{ current_user.id }}')"
+          class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-400 font-bold px-4 py-2 rounded-lg flex items-center shadow-sm hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors"
+        >
+          <span class="material-symbols-outlined text-sm mr-2">back_hand</span>
+          Tự xử lý
+        </button>
+      </div>
+      {% else %}
+      <button
+        disabled
+        class="bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-500 font-bold px-4 py-2 rounded-lg cursor-not-allowed flex items-center border border-amber-200 dark:border-amber-800/50"
+      >
+        <span class="material-symbols-outlined text-sm mr-2">pending</span>
+        Đang chờ phân công
+      </button>
+      {% endif %} {% else %}
+      <!-- Active Update Status Form -->
+      <form
+        action="{{ url_for('staff.update_ticket_status', ticket_id=ticket.id) }}"
+        method="POST"
+        class="flex items-center gap-2"
+      >
+        <select
+          name="status"
+          class="rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-[#283039] dark:text-white py-2 pl-3 pr-10 text-sm focus:ring-primary focus:border-primary shadow-sm"
+        >
+          {% for status in statuses %} {% if status.name in ['In Progress',
+          'Waiting', 'Resolved'] %}
+          <option
+            value="{{ status.name }}"
+            {% if ticket.status == status.name %}selected{% endif %}
+          >
+            {{ status.label }}
+          </option>
+          {% endif %} {% endfor %}
+        </select>
+        <button
+          type="submit"
+          class="bg-slate-900 dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 text-white font-bold px-4 py-2 rounded-lg transition-colors"
+        >
+          Cập nhật
+        </button>
+      </form>
+      {% endif %} {% endif %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content: Description & Chat -->
+    <div class="lg:col-span-2 space-y-8">
+      <!-- Ticket Description -->
+      {% if ticket.status == 'Rejected' and ticket.rejection_reason %}
+      <div
+        class="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl p-6 relative overflow-hidden"
+      >
+        <div
+          class="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-red-100 dark:bg-red-800/20 rounded-full blur-xl"
+        ></div>
+        <div class="relative">
+          <h3
+            class="flex items-center text-red-800 dark:text-red-400 font-bold mb-2"
+          >
+            <span class="material-symbols-outlined mr-2">block</span>
+            Yêu cầu đã bị từ chối
+          </h3>
+          <p class="text-red-700 dark:text-red-300 text-sm">
+            <span class="font-semibold">Lý do:</span> {{ ticket.rejection_reason
+            }}
+          </p>
+        </div>
+      </div>
+      {% endif %}
+
+      <div
+        class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-slate-200 dark:border-[#3b4754] p-8"
+      >
+        <h3
+          class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4"
+        >
+          Mô tả
+        </h3>
+        <div
+          class="prose prose-slate dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 text-sm leading-relaxed"
+        >
+          {{ ticket.description }}
+        </div>
+        <div
+          class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3"
+        >
+          <div
+            class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300"
+          >
+            {{ ticket.creator.username[0]|upper }}
+          </div>
+          <div>
+            <p class="text-sm font-bold dark:text-white">
+              {{ ticket.creator.full_name }}
+            </p>
+            <p class="text-xs text-slate-500">
+              Đã tạo vào {{ ticket.created_at.strftime('%d/%m/%Y lúc %H:%M') }}
+            </p>
+          </div>
+        </div>
+
+        {% if ticket.attachments %}
+        <div class="mt-6 border-t border-slate-100 dark:border-[#3b4754] pt-6">
+          <h4
+            class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2"
+          >
+            <span class="material-symbols-outlined text-sm">attach_file</span>
+            Tệp đính kèm
+          </h4>
+          <div class="flex flex-wrap gap-3">
+            {% for attachment in ticket.attachments %}
+            <a
+              href="{{ url_for('static', filename='uploads/' + attachment.filename) }}"
+              target="_blank"
+              class="flex items-center gap-2 bg-slate-50 dark:bg-[#1c2128] hover:bg-slate-100 dark:hover:bg-[#283039] border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 transition-colors"
+            >
+              <span class="material-symbols-outlined text-slate-400"
+                >description</span
+              >
+              <span class="truncate max-w-[200px]"
+                >{{ attachment.original_filename }}</span
+              >
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Conversation -->
+      <div>
+        <h3
+          class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center"
+        >
+          <span class="material-symbols-outlined mr-2">chat</span>
+          Trao đổi
+        </h3>
+
+        <div
+          id="chat-container"
+          class="space-y-6 mb-6 h-[500px] overflow-y-auto custom-scrollbar pr-2 border border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-slate-50 dark:bg-slate-900/20"
+        >
+          {% for comment in ticket.comments %} {% if comment.is_internal %} {%
+          if current_user.role != 'user' %}
+          <div
+            class="comment-item bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl p-4 ml-8 relative"
+            data-id="{{ comment.id }}"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
                 <span
-                    class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider {{ ticket.status_color }}">
-                    {{ ticket.status_label }}
-                </span>
+                  class="bg-amber-200 text-amber-800 text-[10px] font-bold px-1.5 rounded uppercase tracking-wider"
+                  >Ghi chú nội bộ</span
+                >
+                <span
+                  class="text-xs font-bold text-slate-700 dark:text-amber-400"
+                  >{{ comment.author.full_name }} ({{ comment.author.role_label
+                  }})</span
+                >
+              </div>
+              <span class="text-xs text-slate-400"
+                >{{ comment.created_at.strftime('%H:%M') }}</span
+              >
             </div>
-            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ ticket.title }}</h1>
+            <p class="text-slate-700 dark:text-amber-100 text-sm">
+              {{ comment.content }}
+            </p>
+          </div>
+          {% endif %} {% else %}
+          <div
+            class="comment-item group flex gap-4 {% if comment.user_id == current_user.id %}flex-row-reverse{% endif %}"
+            data-id="{{ comment.id }}"
+          >
+            <div
+              class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300"
+            >
+              {{ comment.author.username[0]|upper }}
+            </div>
+            <div class="max-w-[85%]">
+              <div
+                class="rounded-2xl p-4 shadow-sm border {% if comment.user_id == current_user.id %}bg-primary text-white border-primary{% else %}bg-white dark:bg-[#111418] border-slate-200 dark:border-[#3b4754] dark:text-slate-200{% endif %}"
+              >
+                <p class="text-sm leading-relaxed">{{ comment.content }}</p>
+              </div>
+              <p
+                class="text-[10px] text-slate-400 mt-1 {% if comment.user_id == current_user.id %}text-right{% endif %}"
+              >
+                {{ comment.author.full_name }} ({{ comment.author.role_label }})
+                • {{ comment.created_at.strftime('%H:%M') }}
+              </p>
+            </div>
+          </div>
+          {% endif %} {% endfor %}
         </div>
 
-        <!-- Action Buttons based on Role -->
-        <div class="flex gap-2">
-            {% if current_user.role == 'user' and ticket.status == 'Resolved' %}
-            <div class="flex gap-2">
-                <a href="{{ url_for('user.ticket_feedback', ticket_id=ticket.id) }}"
-                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg shadow-lg shadow-emerald-500/20 flex items-center transition-all">
-                    <span class="material-symbols-outlined mr-2">check_circle</span>
-                    Xác nhận & Đóng
-                </a>
-                <form action="{{ url_for('user.reopen_ticket', ticket_id=ticket.id) }}" method="POST">
-                    <button type="submit" onclick="return confirm('Bạn có chắc chắn muốn mở lại yêu cầu này vì chưa được xử lý thỏa đáng?')"
-                        class="bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 font-bold px-4 py-2 rounded-lg flex items-center hover:bg-rose-200 dark:hover:bg-rose-800/40 transition-all border border-rose-200 dark:border-rose-800/50">
-                        <span class="material-symbols-outlined mr-2">replay</span>
-                        Yêu cầu xử lý lại
-                    </button>
-                </form>
-            </div>
-            {% endif %}
+        <!-- Reply Box -->
+        {% if ticket.status not in ['Resolved', 'Closed', 'Rejected'] %}
+        <form
+          id="comment-form"
+          onsubmit="handleComment(event)"
+          action="{{ url_for('user.add_comment', ticket_id=ticket.id) }}"
+          method="POST"
+          class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-slate-200 dark:border-[#3b4754] p-4 relative focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all"
+        >
+          <textarea
+            name="content"
+            required
+            rows="3"
+            class="w-full border-0 focus:ring-0 text-slate-700 dark:text-slate-200 text-sm resize-none bg-transparent placeholder-slate-400"
+            placeholder="Viết phản hồi tại đây..."
+          ></textarea>
 
-            {% if current_user.role in ['staff', 'leader'] %}
-            {% if ticket.status in ['Closed', 'Rejected'] %}
-            <!-- Disabled State -->
-            <button disabled
-                class="bg-slate-100 dark:bg-white/5 text-slate-400 font-bold px-4 py-2 rounded-lg cursor-not-allowed flex items-center">
-                <span class="material-symbols-outlined text-sm mr-2">lock</span>
-                Đã khóa
-            </button>
-            {% elif not ticket.assigned_to_id %}
-            <!-- Unassigned State -->
-            {% if current_user.role == 'leader' %}
-            <div class="flex items-center gap-2">
-                <a href="{{ url_for('leader.assignment') }}"
-                    class="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 font-bold px-4 py-2 rounded-lg flex items-center shadow-sm hover:bg-amber-200 dark:hover:bg-amber-800/40 transition-colors">
-                    <span class="material-symbols-outlined text-sm mr-2">person_add</span>
-                    Phân công Staff
-                </a>
-                <button onclick="assignToMe({{ ticket.id }}, {{ current_user.id }})"
-                    class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-400 font-bold px-4 py-2 rounded-lg flex items-center shadow-sm hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors">
-                    <span class="material-symbols-outlined text-sm mr-2">back_hand</span>
-                    Tự xử lý
-                </button>
+          <div
+            class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800"
+          >
+            <div class="flex items-center">
+              {% if current_user.role != 'user' %}
+              <label
+                class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 select-none"
+              >
+                <input
+                  type="checkbox"
+                  name="is_internal"
+                  class="rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+                />
+                Ghi chú nội bộ
+              </label>
+              {% endif %}
             </div>
-            {% else %}
-            <button disabled
-                class="bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-500 font-bold px-4 py-2 rounded-lg cursor-not-allowed flex items-center border border-amber-200 dark:border-amber-800/50">
-                <span class="material-symbols-outlined text-sm mr-2">pending</span>
-                Đang chờ phân công
+            <button
+              type="submit"
+              class="bg-primary hover:bg-primary/90 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors shadow-sm"
+            >
+              Gửi phản hồi
             </button>
-            {% endif %}
-            {% else %}
-            <!-- Active Update Status Form -->
-            <form action="{{ url_for('staff.update_ticket_status', ticket_id=ticket.id) }}" method="POST"
-                class="flex items-center gap-2">
-                <select name="status"
-                    class="rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-[#283039] dark:text-white py-2 pl-3 pr-10 text-sm focus:ring-primary focus:border-primary shadow-sm">
-                    {% for status in statuses %}
-                    {% if status.name in ['In Progress', 'Waiting', 'Resolved'] %}
-                    <option value="{{ status.name }}" {% if ticket.status==status.name %}selected{% endif %}>{{
-                        status.label }}</option>
-                    {% endif %}
-                    {% endfor %}
-                </select>
-                <button type="submit"
-                    class="bg-slate-900 dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 text-white font-bold px-4 py-2 rounded-lg transition-colors">
-                    Cập nhật
-                </button>
-            </form>
-            {% endif %}
-            {% endif %}
+          </div>
+        </form>
+        {% else %}
+        <div
+          class="bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center text-sm text-slate-500 flex flex-col items-center gap-2"
+        >
+          <span class="material-symbols-outlined text-slate-400"
+            >lock_clock</span
+          >
+          <span
+            >Yêu cầu này đã hoàn tất. Không thể thực hiện thêm thao tác.</span
+          >
         </div>
+        {% endif %}
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Main Content: Description & Chat -->
-        <div class="lg:col-span-2 space-y-8">
-            <!-- Ticket Description -->
-            {% if ticket.status == 'Rejected' and ticket.rejection_reason %}
-            <div
-                class="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl p-6 relative overflow-hidden">
-                <div
-                    class="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-red-100 dark:bg-red-800/20 rounded-full blur-xl">
-                </div>
-                <div class="relative">
-                    <h3 class="flex items-center text-red-800 dark:text-red-400 font-bold mb-2">
-                        <span class="material-symbols-outlined mr-2">block</span>
-                        Yêu cầu đã bị từ chối
-                    </h3>
-                    <p class="text-red-700 dark:text-red-300 text-sm">
-                        <span class="font-semibold">Lý do:</span> {{ ticket.rejection_reason }}
-                    </p>
-                </div>
-            </div>
-            {% endif %}
+    <!-- Sidebar: Meta Info -->
+    <div class="space-y-6">
+      <div
+        class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-slate-200 dark:border-[#3b4754] p-6"
+      >
+        <h3
+          class="font-bold text-slate-900 dark:text-white mb-4 text-sm uppercase tracking-wider"
+        >
+          Thông tin
+        </h3>
+        <dl class="space-y-4 text-sm">
+          <div>
+            <dt
+              class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase"
+            >
+              Danh mục
+            </dt>
+            <dd
+              class="font-medium text-slate-900 dark:text-white flex items-center"
+            >
+              <span
+                class="material-symbols-outlined text-base mr-2 text-slate-400"
+                >folder</span
+              >
+              {{ ticket.category }}
+            </dd>
+          </div>
+          <div>
+            <dt
+              class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase"
+            >
+              Độ ưu tiên
+            </dt>
+            <dd
+              class="font-medium text-slate-900 dark:text-white flex items-center"
+            >
+              {% if ticket.priority == 'Critical' %}
+              <span
+                class="material-symbols-outlined text-base mr-2 text-red-500"
+                >priority_high</span
+              >
+              <span class="text-red-600 font-bold">Khẩn cấp</span>
+              {% elif ticket.priority == 'High' %}
+              <span
+                class="material-symbols-outlined text-base mr-2 text-orange-500"
+                >priority_high</span
+              >
+              <span class="text-orange-500 font-bold">Cao</span>
+              {% elif ticket.priority == 'Medium' %}
+              <span
+                class="material-symbols-outlined text-base mr-2 text-primary"
+                >flag</span
+              >
+              <span class="text-primary font-bold">Vừa</span>
+              {% else %}
+              <span
+                class="material-symbols-outlined text-base mr-2 text-slate-400"
+                >flag</span
+              >
+              <span class="text-slate-500 font-bold">Thấp</span>
+              {% endif %}
+            </dd>
+          </div>
+          <div>
+            <dt
+              class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase"
+            >
+              Người xử lý
+            </dt>
+            <dd
+              class="font-medium text-slate-900 dark:text-white flex items-center"
+            >
+              <span
+                class="material-symbols-outlined text-base mr-2 text-slate-400"
+                >support_agent</span
+              >
+              {{ ticket.assigned_to.full_name if ticket.assigned_to else 'Chưa
+              phân công' }}
+            </dd>
+          </div>
+          <div>
+            <dt
+              class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase"
+            >
+              Phòng ban
+            </dt>
+            <dd
+              class="font-medium text-slate-900 dark:text-white flex items-center"
+            >
+              <span
+                class="material-symbols-outlined text-base mr-2 text-slate-400"
+                >location_city</span
+              >
+              {{ ticket.creator.department if ticket.creator.department else
+              'N/A' }}
+            </dd>
+          </div>
+          {% if ticket.due_date %}
+          <div>
+            <dt
+              class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase"
+            >
+              SLA (Thời hạn)
+            </dt>
+            <dd
+              class="font-medium text-slate-900 dark:text-white flex items-center"
+            >
+              <span
+                class="material-symbols-outlined text-base mr-2 text-slate-400"
+                >event</span
+              >
+              {{ ticket.due_date.strftime('%H:%M %d/%m/%Y') }} {% if
+              ticket.due_date < now_vn and ticket.status not in ['Resolved',
+              'Closed', 'Rejected'] %}
+              <span
+                class="ml-2 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse border border-red-200 dark:border-red-800"
+                >Quá hạn</span
+              >
+              {% endif %}
+            </dd>
+          </div>
+          {% endif %}
+        </dl>
+      </div>
 
-            <div
-                class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-slate-200 dark:border-[#3b4754] p-8">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Mô tả</h3>
-                <div
-                    class="prose prose-slate dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 text-sm leading-relaxed">
-                    {{ ticket.description }}
-                </div>
-                <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
-                    <div
-                        class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
-                        {{ ticket.creator.username[0]|upper }}
-                    </div>
-                    <div>
-                        <p class="text-sm font-bold dark:text-white">{{ ticket.creator.full_name }}</p>
-                        <p class="text-xs text-slate-500">Đã tạo vào {{ ticket.created_at.strftime('%d/%m/%Y lúc %H:%M')
-                            }}</p>
-                    </div>
-                </div>
-
-                {% if ticket.attachments %}
-                <div class="mt-6 border-t border-slate-100 dark:border-[#3b4754] pt-6">
-                    <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm">attach_file</span>
-                        Tệp đính kèm
-                    </h4>
-                    <div class="flex flex-wrap gap-3">
-                        {% for attachment in ticket.attachments %}
-                        <a href="{{ url_for('static', filename='uploads/' + attachment.filename) }}" target="_blank"
-                            class="flex items-center gap-2 bg-slate-50 dark:bg-[#1c2128] hover:bg-slate-100 dark:hover:bg-[#283039] border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 transition-colors">
-                            <span class="material-symbols-outlined text-slate-400">description</span>
-                            <span class="truncate max-w-[200px]">{{ attachment.original_filename }}</span>
-                        </a>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- Conversation -->
-            <div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center">
-                    <span class="material-symbols-outlined mr-2">chat</span>
-                    Trao đổi
-                </h3>
-
-                <div id="chat-container"
-                    class="space-y-6 mb-6 h-[500px] overflow-y-auto custom-scrollbar pr-2 border border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-slate-50 dark:bg-slate-900/20">
-                    {% for comment in ticket.comments %}
-                    {% if comment.is_internal %}
-                    {% if current_user.role != 'user' %}
-                    <div
-                        class="comment-item bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl p-4 ml-8 relative" data-id="{{ comment.id }}">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-2">
-                                <span
-                                    class="bg-amber-200 text-amber-800 text-[10px] font-bold px-1.5 rounded uppercase tracking-wider">Ghi
-                                    chú nội bộ</span>
-                                <span class="text-xs font-bold text-slate-700 dark:text-amber-400">{{
-                                    comment.author.full_name }} ({{ comment.author.role_label }})</span>
-                            </div>
-                            <span class="text-xs text-slate-400">{{ comment.created_at.strftime('%H:%M') }}</span>
-                        </div>
-                        <p class="text-slate-700 dark:text-amber-100 text-sm">{{ comment.content }}</p>
-                    </div>
-                    {% endif %}
-                    {% else %}
-                    <div
-                        class="comment-item group flex gap-4 {% if comment.user_id == current_user.id %}flex-row-reverse{% endif %}" data-id="{{ comment.id }}">
-                        <div
-                            class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
-                            {{ comment.author.username[0]|upper }}
-                        </div>
-                        <div class="max-w-[85%]">
-                            <div
-                                class="rounded-2xl p-4 shadow-sm border {% if comment.user_id == current_user.id %}bg-primary text-white border-primary{% else %}bg-white dark:bg-[#111418] border-slate-200 dark:border-[#3b4754] dark:text-slate-200{% endif %}">
-                                <p class="text-sm leading-relaxed">{{ comment.content }}</p>
-                            </div>
-                            <p
-                                class="text-[10px] text-slate-400 mt-1 {% if comment.user_id == current_user.id %}text-right{% endif %}">
-                                {{ comment.author.full_name }} ({{ comment.author.role_label }}) • {{
-                                comment.created_at.strftime('%H:%M') }}
-                            </p>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-
-                <!-- Reply Box -->
-                {% if ticket.status not in ['Resolved', 'Closed', 'Rejected'] %}
-                <form id="comment-form" onsubmit="handleComment(event)"
-                    action="{{ url_for('user.add_comment', ticket_id=ticket.id) }}" method="POST"
-                    class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-slate-200 dark:border-[#3b4754] p-4 relative focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
-                    <textarea name="content" required rows="3"
-                        class="w-full border-0 focus:ring-0 text-slate-700 dark:text-slate-200 text-sm resize-none bg-transparent placeholder-slate-400"
-                        placeholder="Viết phản hồi tại đây..."></textarea>
-
-                    <div
-                        class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                        <div class="flex items-center">
-                            {% if current_user.role != 'user' %}
-                            <label
-                                class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 select-none">
-                                <input type="checkbox" name="is_internal"
-                                    class="rounded border-slate-300 text-amber-500 focus:ring-amber-500">
-                                Ghi chú nội bộ
-                            </label>
-                            {% endif %}
-                        </div>
-                        <button type="submit"
-                            class="bg-primary hover:bg-primary/90 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors shadow-sm">
-                            Gửi phản hồi
-                        </button>
-                    </div>
-                </form>
-                {% else %}
-                <div
-                    class="bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center text-sm text-slate-500 flex flex-col items-center gap-2">
-                    <span class="material-symbols-outlined text-slate-400">lock_clock</span>
-                    <span>Yêu cầu này đã hoàn tất. Không thể thực hiện thêm thao tác.</span>
-                </div>
-                {% endif %}
-            </div>
+      {% if ticket.status == 'Closed' and ticket.feedback %}
+      <div
+        class="bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/30 p-6"
+      >
+        <h3 class="font-bold text-emerald-900 dark:text-emerald-400 mb-2">
+          Đánh giá từ khách hàng
+        </h3>
+        <div class="flex text-amber-400 mb-2 gap-1">
+          {% for i in range(ticket.feedback.rating) %}
+          <span
+            class="material-symbols-outlined text-sm"
+            style="font-variation-settings: &quot;FILL&quot; 1"
+            >star</span
+          >
+          {% endfor %}
         </div>
-
-        <!-- Sidebar: Meta Info -->
-        <div class="space-y-6">
-            <div
-                class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-slate-200 dark:border-[#3b4754] p-6">
-                <h3 class="font-bold text-slate-900 dark:text-white mb-4 text-sm uppercase tracking-wider">Thông tin
-                </h3>
-                <dl class="space-y-4 text-sm">
-                    <div>
-                        <dt class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase">Danh mục
-                        </dt>
-                        <dd class="font-medium text-slate-900 dark:text-white flex items-center">
-                            <span class="material-symbols-outlined text-base mr-2 text-slate-400">folder</span>
-                            {{ ticket.category }}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase">Độ ưu tiên
-                        </dt>
-                        <dd class="font-medium text-slate-900 dark:text-white flex items-center">
-                            {% if ticket.priority == 'Critical' %}
-                            <span class="material-symbols-outlined text-base mr-2 text-red-500">priority_high</span>
-                            <span class="text-red-600 font-bold">Khẩn cấp</span>
-                            {% elif ticket.priority == 'High' %}
-                            <span class="material-symbols-outlined text-base mr-2 text-orange-500">priority_high</span>
-                            <span class="text-orange-500 font-bold">Cao</span>
-                            {% elif ticket.priority == 'Medium' %}
-                            <span class="material-symbols-outlined text-base mr-2 text-primary">flag</span>
-                            <span class="text-primary font-bold">Vừa</span>
-                            {% else %}
-                            <span class="material-symbols-outlined text-base mr-2 text-slate-400">flag</span>
-                            <span class="text-slate-500 font-bold">Thấp</span>
-                            {% endif %}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase">Người xử lý
-                        </dt>
-                        <dd class="font-medium text-slate-900 dark:text-white flex items-center">
-                            <span class="material-symbols-outlined text-base mr-2 text-slate-400">support_agent</span>
-                            {{ ticket.assigned_to.full_name if ticket.assigned_to else 'Chưa phân công' }}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase">Phòng ban</dt>
-                        <dd class="font-medium text-slate-900 dark:text-white flex items-center">
-                            <span class="material-symbols-outlined text-base mr-2 text-slate-400">location_city</span>
-                            {{ ticket.creator.department if ticket.creator.department else 'N/A' }}
-                        </dd>
-                    </div>
-                    {% if ticket.due_date %}
-                    <div>
-                        <dt class="text-slate-500 dark:text-slate-400 mb-1 text-xs font-semibold uppercase">SLA (Thời hạn)</dt>
-                        <dd class="font-medium text-slate-900 dark:text-white flex items-center">
-                            <span class="material-symbols-outlined text-base mr-2 text-slate-400">event</span>
-                            {{ ticket.due_date.strftime('%H:%M %d/%m/%Y') }}
-                            {% if ticket.due_date < now_vn and ticket.status not in ['Resolved', 'Closed', 'Rejected'] %}
-                            <span class="ml-2 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse border border-red-200 dark:border-red-800">Quá hạn</span>
-                            {% endif %}
-                        </dd>
-                    </div>
-                    {% endif %}
-                </dl>
-            </div>
-
-            {% if ticket.status == 'Closed' and ticket.feedback %}
-            <div
-                class="bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/30 p-6">
-                <h3 class="font-bold text-emerald-900 dark:text-emerald-400 mb-2">Đánh giá từ khách hàng</h3>
-                <div class="flex text-amber-400 mb-2 gap-1">
-                    {% for i in range(ticket.feedback.rating) %}
-                    <span class="material-symbols-outlined text-sm"
-                        style="font-variation-settings: 'FILL' 1;">star</span>
-                    {% endfor %}
-                </div>
-                <p class="text-emerald-800 dark:text-emerald-200 text-sm italic">"{{ ticket.feedback.comment }}"</p>
-            </div>
-            {% endif %}
-        </div>
+        <p class="text-emerald-800 dark:text-emerald-200 text-sm italic">
+          "{{ ticket.feedback.comment }}"
+        </p>
+      </div>
+      {% endif %}
     </div>
+  </div>
 </div>
 
 <script>
-    // Scroll to bottom on load
-    const chatContainer = document.getElementById('chat-container');
-    if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
+  // Scroll to bottom on load
+  const chatContainer = document.getElementById("chat-container");
+  if (chatContainer) {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
 
-    async function handleComment(event) {
-        event.preventDefault();
-        const form = event.target;
-        const formData = new FormData(form);
-        const submitBtn = form.querySelector('button[type="submit"]');
+  async function handleComment(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
 
-        // Disable button to prevent double submit
-        submitBtn.disabled = true;
-        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    // Disable button to prevent double submit
+    submitBtn.disabled = true;
+    submitBtn.classList.add("opacity-50", "cursor-not-allowed");
 
-        try {
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
+    try {
+      const response = await fetch(form.action, {
+        method: "POST",
+        body: formData,
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    appendComment(data.comment);
-                    form.reset();
-                    // Scroll to bottom
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                    if (typeof showToast === 'function') {
-                        showToast('Gửi bình luận thành công!', 'success');
-                    }
-                } else {
-                    if (typeof showToast === 'function') {
-                        showToast('Có lỗi xảy ra: ' + (data.message || 'Unknown error'), 'error');
-                    } else {
-                        alert('Có lỗi xảy ra: ' + (data.message || 'Unknown error'));
-                    }
-                }
-            } else {
-                if (typeof showToast === 'function') {
-                    showToast('Có lỗi kết nối máy chủ.', 'error');
-                } else {
-                    alert('Có lỗi kết nối máy chủ.');
-                }
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            if (typeof showToast === 'function') {
-                showToast('Có lỗi xảy ra khi gửi bình luận.', 'error');
-            } else {
-                alert('Có lỗi xảy ra khi gửi bình luận.');
-            }
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          appendComment(data.comment);
+          form.reset();
+          // Scroll to bottom
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+          if (typeof showToast === "function") {
+            showToast("Gửi bình luận thành công!", "success");
+          }
+        } else {
+          if (typeof showToast === "function") {
+            showToast(
+              "Có lỗi xảy ra: " + (data.message || "Unknown error"),
+              "error",
+            );
+          } else {
+            alert("Có lỗi xảy ra: " + (data.message || "Unknown error"));
+          }
         }
+      } else {
+        if (typeof showToast === "function") {
+          showToast("Có lỗi kết nối máy chủ.", "error");
+        } else {
+          alert("Có lỗi kết nối máy chủ.");
+        }
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      if (typeof showToast === "function") {
+        showToast("Có lỗi xảy ra khi gửi bình luận.", "error");
+      } else {
+        alert("Có lỗi xảy ra khi gửi bình luận.");
+      }
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
     }
+  }
 
-    function appendComment(comment) {
-        const currentUserId = Number('{{ current_user.id }}');
-        let html = '';
+  function appendComment(comment) {
+    const currentUserId = Number("{{ current_user.id }}");
+    let html = "";
 
-        if (comment.is_internal) {
-            html = `
+    if (comment.is_internal) {
+      html = `
             <div class="comment-item bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl p-4 ml-8 relative animate-fade-in-up" data-id="${comment.id}">
                 <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center gap-2">
@@ -394,13 +555,15 @@
                 </div>
                 <p class="text-slate-700 dark:text-amber-100 text-sm">${comment.content}</p>
             </div>`;
-        } else {
-            const isMe = comment.user_id === currentUserId;
-            const flexClass = isMe ? 'flex-row-reverse' : '';
-            const bgClass = isMe ? 'bg-primary text-white border-primary' : 'bg-white dark:bg-[#111418] border-slate-200 dark:border-[#3b4754] dark:text-slate-200';
-            const alignClass = isMe ? 'text-right' : '';
+    } else {
+      const isMe = comment.user_id === currentUserId;
+      const flexClass = isMe ? "flex-row-reverse" : "";
+      const bgClass = isMe
+        ? "bg-primary text-white border-primary"
+        : "bg-white dark:bg-[#111418] border-slate-200 dark:border-[#3b4754] dark:text-slate-200";
+      const alignClass = isMe ? "text-right" : "";
 
-            html = `
+      html = `
             <div class="comment-item group flex gap-4 ${flexClass} animate-fade-in-up" data-id="${comment.id}">
                 <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
                     ${comment.author_initial}
@@ -414,90 +577,98 @@
                     </p>
                 </div>
             </div>`;
-        }
+    }
 
-        // Append HTML to container
-        // Using insertAdjacentHTML is safer/faster than innerHTML +=
-        chatContainer.insertAdjacentHTML('beforeend', html);
-        
-        // Update lastId
-        lastCommentId = Math.max(lastCommentId, comment.id);
+    // Append HTML to container
+    // Using insertAdjacentHTML is safer/faster than innerHTML +=
+    chatContainer.insertAdjacentHTML("beforeend", html);
+
+    // Update lastId
+    lastCommentId = Math.max(lastCommentId, comment.id);
+  }
+
+  // Auto-polling for real-time messaging
+  let lastCommentId = 0;
+
+  function initPoll() {
+    const commentItems = document.querySelectorAll(".comment-item");
+    if (commentItems.length > 0) {
+      const lastItem = commentItems[commentItems.length - 1];
+      if (lastItem.hasAttribute("data-id")) {
+        lastCommentId = parseInt(lastItem.getAttribute("data-id"), 10);
+      }
     }
-    
-    // Auto-polling for real-time messaging
-    let lastCommentId = 0;
-    
-    function initPoll() {
-        const commentItems = document.querySelectorAll('.comment-item');
-        if (commentItems.length > 0) {
-            const lastItem = commentItems[commentItems.length - 1];
-            if (lastItem.hasAttribute('data-id')) {
-                lastCommentId = parseInt(lastItem.getAttribute('data-id'), 10);
+  }
+
+  initPoll();
+
+  async function pollNewComments() {
+    try {
+      const url = `{{ url_for('user.poll_comments', ticket_id=ticket.id) }}?last_id=${lastCommentId}`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.comments && data.comments.length > 0) {
+          let scrolledToBottom = false;
+          // check if user was scrolled to bottom
+          if (chatContainer) {
+            scrolledToBottom =
+              Math.abs(
+                chatContainer.scrollHeight -
+                  chatContainer.clientHeight -
+                  chatContainer.scrollTop,
+              ) < 10;
+          }
+
+          data.comments.forEach((comment) => {
+            // Avoid duplicates if added manually just before poll returns
+            if (
+              !document.querySelector(`.comment-item[data-id="${comment.id}"]`)
+            ) {
+              appendComment(comment);
             }
+          });
+
+          if (scrolledToBottom && chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+          }
         }
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải tin nhắn mới:", err);
     }
-    
-    initPoll();
-    
-    async function pollNewComments() {
-        try {
-            const url = `{{ url_for('user.poll_comments', ticket_id=ticket.id) }}?last_id=${lastCommentId}`;
-            const response = await fetch(url);
-            if (response.ok) {
-                const data = await response.json();
-                if (data.comments && data.comments.length > 0) {
-                    let scrolledToBottom = false;
-                    // check if user was scrolled to bottom
-                    if (chatContainer) {
-                        scrolledToBottom = Math.abs(chatContainer.scrollHeight - chatContainer.clientHeight - chatContainer.scrollTop) < 10;
-                    }
-                    
-                    data.comments.forEach(comment => {
-                        // Avoid duplicates if added manually just before poll returns
-                        if (!document.querySelector(`.comment-item[data-id="${comment.id}"]`)) {
-                            appendComment(comment);
-                        }
-                    });
-                    
-                    if (scrolledToBottom && chatContainer) {
-                        chatContainer.scrollTop = chatContainer.scrollHeight;
-                    }
-                }
-            }
-        } catch (err) {
-            console.error('Lỗi khi tải tin nhắn mới:', err);
-        }
-    }
-    
-    // Poll every 3 seconds
-    setInterval(pollNewComments, 3000);
+  }
+
+  // Poll every 3 seconds
+  setInterval(pollNewComments, 3000);
 </script>
 
 <script>
-async function assignToMe(ticketId, userId) {
-    if (!confirm('Bạn có chắc chắn muốn TỰ NHẬN xử lý yêu cầu này không?')) return;
-    
+  async function assignToMe(ticketId, userId) {
+    if (!confirm("Bạn có chắc chắn muốn TỰ NHẬN xử lý yêu cầu này không?"))
+      return;
+
     const formData = new FormData();
-    formData.append('staff_id', userId);
-    
+    formData.append("staff_id", userId);
+
     try {
-        const response = await fetch(`/assign_ticket/${ticketId}`, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData
-        });
-        const data = await response.json();
-        if (data.success) {
-            window.location.reload();
-        } else {
-            alert('Có lỗi xảy ra!');
-        }
-    } catch(e) {
-        console.error(e);
-        alert('Lỗi kết nối!');
+      const response = await fetch(`/assign_ticket/${ticketId}`, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.success) {
+        window.location.reload();
+      } else {
+        alert("Có lỗi xảy ra!");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Lỗi kết nối!");
     }
-}
+  }
 </script>
 {% endblock %}
